@@ -103,7 +103,7 @@ production.
 ### MVP Boundaries
 
 - Input validation for public GitHub repository URLs
-- Repository metadata extraction and normalization from the GitHub REST API
+- Repository metadata extraction and normalization from the GitHub GraphQL API
 - README and file-tree collection through reusable integration flows
 - Canonical internal models shared by analysis and reporting components
 - AI-generated architectural observations and actionable recommendations
@@ -148,11 +148,13 @@ remain replaceable behind a provider abstraction.
 
 ### API Strategy
 
-GitHub integration MUST use the REST API with robust error handling for rate
-limiting, missing resources, and partial responses. Retry, backoff, caching,
-and failure messaging MUST preserve user trust and avoid ambiguous system
-states. Future data sources MUST follow the same adapter and contract rules as
-GitHub so integration scale does not create architectural drift.
+GitHub integration MUST use the GraphQL API as the primary data interface with
+robust error handling for rate limiting, missing resources, and partial
+responses. REST fallback MAY be used when GraphQL cannot provide required
+fields. Retry, backoff, caching, and failure messaging MUST preserve user trust
+and avoid ambiguous system states. Future data sources MUST follow the same
+adapter and contract rules as GitHub so integration scale does not create
+architectural drift.
 
 ## Existing Assets and Reuse Targets
 
