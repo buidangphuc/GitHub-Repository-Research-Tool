@@ -8,7 +8,10 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: The examples below include test tasks. Tests remain OPTIONAL unless
+the feature specification requires them, but adapter integrity, canonical
+contract mapping, duplicate-logic prevention, scalability boundaries, and
+observability tasks are NEVER optional for this project.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -48,9 +51,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+- [ ] T001 Create layered project structure per implementation plan
+- [ ] T002 Initialize Python project with FastAPI, Pydantic, HTTP client, provider SDK, and testing dependencies
+- [ ] T003 [P] Configure linting, formatting, and architecture guardrails against duplicated logic
 
 ---
 
@@ -62,12 +65,12 @@ description: "Task list template for feature implementation"
 
 Examples of foundational tasks (adjust based on your project):
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T004 Define boundary schemas and canonical contracts in src/contracts/ and src/models/
+- [ ] T005 [P] Implement reusable adapter interfaces and provider integration utilities in src/adapters/
+- [ ] T006 [P] Setup API routing, dependency wiring, and request validation in src/api/
+- [ ] T007 Create orchestration pipelines for fetch -> validate -> map -> analyze -> render in src/orchestration/
+- [ ] T008 Build shared mapping, context, and domain services in src/services/ and src/shared/
+- [ ] T009 Setup structured logging, error taxonomy, concurrency limits, and configuration management
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -83,17 +86,17 @@ Examples of foundational tasks (adjust based on your project):
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T010 [P] [US1] Contract test for adapter behavior or canonical contract mapping in tests/contract/test_[name].py
+- [ ] T011 [P] [US1] Integration test for the end-to-end flow in tests/integration/test_[name].py
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
+- [ ] T012 [P] [US1] Add or extend canonical contracts in src/contracts/[file].py or src/models/[file].py
+- [ ] T013 [P] [US1] Extend provider adapter or mapping logic in src/adapters/[provider]/[file].py
+- [ ] T014 [US1] Extend shared domain service or orchestration flow in src/services/[service].py or src/orchestration/[flow].py
+- [ ] T015 [US1] Implement endpoint or pipeline entry point in src/api/[file].py
+- [ ] T016 [US1] Add observability, deterministic errors, and scale guards without duplicating existing logic
+- [ ] T017 [US1] Render output through shared reporting components in src/reporting/[file].py
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -107,15 +110,15 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T018 [P] [US2] Contract test for adapter extension, canonical contract behavior, or endpoint behavior in tests/contract/test_[name].py
+- [ ] T019 [P] [US2] Integration test for the user journey in tests/integration/test_[name].py
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
-- [ ] T021 [US2] Implement [Service] in src/services/[service].py
-- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T023 [US2] Integrate with User Story 1 components (if needed)
+- [ ] T020 [P] [US2] Extend canonical contracts or mapping rules in src/contracts/[entity].py or src/models/[entity].py
+- [ ] T021 [US2] Extend shared service or orchestration logic in src/services/[service].py or src/orchestration/[flow].py
+- [ ] T022 [US2] Implement API or pipeline integration in src/api/[file].py
+- [ ] T023 [US2] Integrate with existing adapters, contracts, shared services, and report components as needed
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -129,14 +132,14 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
 
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T024 [P] [US3] Contract test for error handling, observability, or report output in tests/contract/test_[name].py
+- [ ] T025 [P] [US3] Integration test for the user journey in tests/integration/test_[name].py
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
-- [ ] T027 [US3] Implement [Service] in src/services/[service].py
-- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T026 [P] [US3] Extend contracts, transforms, or report sections in src/contracts/[entity].py, src/models/[entity].py, or src/reporting/[file].py
+- [ ] T027 [US3] Implement service or orchestration logic in src/services/[service].py or src/orchestration/[flow].py
+- [ ] T028 [US3] Implement endpoint or reporting behavior in src/[location]/[file].py
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -151,10 +154,10 @@ Examples of foundational tasks (adjust based on your project):
 **Purpose**: Improvements that affect multiple user stories
 
 - [ ] TXXX [P] Documentation updates in docs/
-- [ ] TXXX Code cleanup and refactoring
-- [ ] TXXX Performance optimization across all stories
+- [ ] TXXX Remove duplicate logic and consolidate abstractions where overlap emerged
+- [ ] TXXX Performance and concurrency optimization across all stories
 - [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
-- [ ] TXXX Security hardening
+- [ ] TXXX Validate rate-limit handling, schema drift behavior, backpressure, and explicit failure observability
 - [ ] TXXX Run quickstart.md validation
 
 ---
@@ -179,9 +182,11 @@ Examples of foundational tasks (adjust based on your project):
 ### Within Each User Story
 
 - Tests (if included) MUST be written and FAIL before implementation
-- Models before services
-- Services before endpoints
+- Contracts and adapters before orchestration or report rendering
+- Extend shared services before creating new abstractions
 - Core implementation before integration
+- No source-specific parsing outside adapters
+- Failure behavior, observability, and Markdown output before story sign-off
 - Story complete before moving to next priority
 
 ### Parallel Opportunities
@@ -245,7 +250,8 @@ With multiple developers:
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
 - Each user story should be independently completable and testable
-- Verify tests fail before implementing
+- Verify tests fail before implementing when tests are included
+- Always include tasks for adapter integrity, canonical contract reuse, duplicate-logic prevention, and observability
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+- Avoid: vague tasks, same file conflicts, duplicated function logic, and source-specific parsing outside adapters

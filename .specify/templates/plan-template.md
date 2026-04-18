@@ -7,7 +7,9 @@
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+[Describe the user-facing capability, the integration paths it touches, the
+shared services or contracts it extends, and how the change reduces
+duplication while improving integratability, reliability, or scale.]
 
 ## Technical Context
 
@@ -17,21 +19,30 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Python 3.11+  
+**Primary Dependencies**: FastAPI, Pydantic, httpx, provider SDKs, pytest  
+**Storage**: N/A for MVP unless a feature explicitly introduces persistence  
+**Testing**: pytest, pytest-asyncio, contract tests for adapters and canonical contracts  
+**Target Platform**: Server-side Python service on macOS/Linux  
+**Project Type**: Async integration and report orchestration service  
+**Performance Goals**: Keep latency predictable while allowing new providers, higher traffic, and deeper analysis without rewriting core flows  
+**Constraints**: Respect GitHub rate limits, keep services stateless where practical, forbid source-specific parsing outside adapters, and avoid duplicate business logic  
+**Scale/Scope**: Public GitHub repositories only; single-repository analysis per request in the MVP, with future growth handled through adapters and canonical contracts
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- **Reusable Service Architecture**: Does the design extend shared services,
+  adapters, or abstractions instead of introducing duplicated function logic?
+- **Integration-First Data Contracts**: Do all external payloads enter through
+  adapters and map once into canonical internal contracts?
+- **Scalability by Design**: Are statelessness, async I/O, concurrency limits,
+  and isolation of expensive work explicitly addressed?
+- **Pattern Discipline and Low Coupling**: Are chosen patterns justified by
+  reduced duplication or coupling rather than ceremony?
+- **Operational Reliability and Observability**: Are failure points explicit
+  across fetch, validate, map, orchestrate, analyze, and render stages?
 
 ## Project Structure
 
@@ -56,43 +67,31 @@ specs/[###-feature]/
 -->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
 src/
-├── models/
+├── api/
+├── adapters/
+├── contracts/
+├── domain/
+├── orchestration/
+├── reporting/
 ├── services/
-├── cli/
-└── lib/
+└── shared/
 
 tests/
+├── architecture/
 ├── contract/
 ├── integration/
 └── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Use a layered async backend service. Place HTTP
+boundaries in `src/api/`, provider-specific integrations in `src/adapters/`,
+canonical internal contracts in `src/contracts/`, core business rules in
+`src/domain/`, flow composition in `src/orchestration/`, reusable operational
+and support services in `src/services/`, report formatting in `src/reporting/`,
+and shared utilities in `src/shared/`. No source-specific parsing may escape
+the adapter layer, and no shared business behavior may be reimplemented in
+parallel modules.
 
 ## Complexity Tracking
 
@@ -100,5 +99,5 @@ directories captured above]
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| [e.g., New abstraction layer] | [current need] | [why extending the existing shared service was insufficient] |
+| [e.g., Queue/cache boundary] | [specific scaling problem] | [why inline synchronous orchestration was insufficient] |
