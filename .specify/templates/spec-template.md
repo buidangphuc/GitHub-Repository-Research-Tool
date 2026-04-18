@@ -5,6 +5,14 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
+## Existing Asset Review *(mandatory)*
+
+- [List the current files, directories, scripts, and infrastructure reviewed
+  for reuse]
+- [State which existing asset will be extended first]
+- [Justify each new file, directory, or workflow that cannot fit into the
+  current repository structure]
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -20,9 +28,10 @@
   - Demonstrated to users independently
 -->
 
-Every user story for GitInsight MUST describe what validated repository
-evidence is consumed, which shared services or adapters are extended, and how
-the implementation preserves low duplication and future scalability.
+Every user story MUST describe what validated repository evidence is consumed,
+which existing files or directories are extended, which shared services or
+adapters are reused, and how the implementation preserves low duplication and
+future scalability.
 
 ### User Story 1 - [Brief Title] (Priority: P1)
 
@@ -86,7 +95,8 @@ the implementation preserves low duplication and future scalability.
 
 - [List the MVP-aligned capability being added]
 - [List the validated repository evidence this feature will use]
-- [List the shared adapter, canonical contract, or service that will be reused or extended]
+- [List the existing `app/`, `common/`, `core/`, `database/`, `middleware/`,
+  `socketio/`, `utils/`, or `scripts/` asset that will be reused or extended]
 
 ### Out of Scope
 
@@ -113,9 +123,11 @@ the implementation preserves low duplication and future scalability.
 - **FR-003**: System MUST map provider-specific payloads into canonical
   internal contracts exactly once and consume those contracts from business
   services, orchestration, and reporting.
-- **FR-004**: System MUST reuse or extend an existing shared service,
-  abstraction, or mapper when the responsibility already exists; duplicate
-  function logic is prohibited.
+- **FR-004**: System MUST review existing assets in `app/`, `common/`, `core/`,
+  `database/`, `middleware/`, `socketio/`, `utils/`, and `scripts/` before
+  adding new modules, and MUST reuse or extend them when the responsibility
+  already exists; duplicate function logic and parallel helper layers are
+  prohibited.
 - **FR-005**: System MUST keep fetch, validate, map, orchestrate, analyze, and
   render responsibilities separable so scaling or replacement can happen
   without rewriting unrelated layers.
