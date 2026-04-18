@@ -8,13 +8,15 @@
 Build a compact event-driven repository research demo inside the existing
 FastAPI codebase. FastAPI will act as the API gateway and UI host: it accepts a
 repository URL, generates a `job_id`, enqueues a Celery task through Redis, and
-returns immediately so the browser can render a dashboard shell and begin short
-polling. Redis will serve both as Celery broker and short-lived job-state
+returns immediately so clients can start short polling for progress. Redis will
+serve both as Celery broker and short-lived job-state
 cache. Celery workers will run in a separate container but reuse the same
 Python codebase, pulling tasks from Redis to call GitHub GraphQL, run a fast
-LLM model, and persist final results to the primary database. Docker Compose
-will bundle the app, worker, Redis, and database into one demo-ready startup
-flow.
+LLM model, and persist final results to the primary database. The primary
+human-facing artifact is a structured Markdown report, while JSON
+machine-readable contracts remain the integration format for submission,
+polling, and data exchange. Docker Compose will bundle the app, worker, Redis,
+and database into one demo-ready startup flow.
 
 ## Existing Asset Review
 
@@ -22,6 +24,9 @@ flow.
   creating a second FastAPI app or a separate frontend runtime.
 - `app/router.py`: extend the router aggregation to include research endpoints
   while preserving the current feature-based layout.
+- `app/research/service/` and `app/research/schema/`: keep orchestration and
+  contract ownership in this feature package so AI and report composition logic
+  is isolated from transport and infrastructure adapters.
 - `app/task/celery.py`, `app/task/conf.py`, `app/task/service/task_service.py`,
   `app/task/celery_task/base.py`, and `app/task/celery_task/tasks.py`: reuse
   the current Celery bootstrap and task infrastructure instead of creating a
@@ -54,14 +59,16 @@ state-transition tests, mocked GraphQL and LLM provider tests
 containers; macOS or Linux local development  
 **Project Type**: Feature-based FastAPI monolith with event-driven background
 execution  
-**Performance Goals**: accept valid jobs within 1 second, render warm-cache
-instant overview data within 500 milliseconds when available, and reach a
-terminal state within 30 seconds for typical demo repositories  
+**Performance Goals**: deliver full terminal results (`completed` or `failed`)
+within 30 seconds for typical demo repositories, with progressive status
+updates during processing  
 **Constraints**: keep GitHub and LLM I/O asynchronous where possible; use
 Redis as the only broker; use short polling at a default 2-second interval;
 validate all cross-stage payloads with Pydantic; expose research APIs in
 Swagger UI; reuse the existing task infrastructure before introducing any new
-orchestration layer  
+orchestration layer; enforce Ports-and-Adapters boundaries so domain services
+depend on explicit ports and never instantiate vendor SDK or infrastructure
+clients directly; resolve adapters via dependency injection and configuration  
 **Scale/Scope**: one repository per job, demo-focused worker scale, one primary
 database, and no WebSocket or SSE channel in v1
 
@@ -77,6 +84,9 @@ database, and no WebSocket or SSE channel in v1
 - **Reusable Service Architecture**: PASS. The design separates gateway,
   GraphQL ingestion, AI analysis, persistence, job-state handling, and UI view
   composition into focused services.
+- **Ports and Adapters Discipline**: PASS. Queue, cache, database, and LLM
+  integrations are represented as explicit ports, with adapter implementations
+  selected by dependency injection at runtime.
 - **Integration-First Data Contracts**: PASS. Input, job-state, GraphQL,
   processing, AI, persistence, and UI payloads are validated by Pydantic before
   crossing subsystem boundaries.
@@ -177,15 +187,20 @@ tests/
 Place HTTP and view orchestration in `app/research/`, reuse the existing
 `app/task/celery_task/` package for background execution, and introduce
 research-specific model and CRUD modules only where final result storage is
-required. Reuse `database/redis.py` for job-state cache access and keep Docker
-Compose as the main demo bootstrap path.
+required. Keep pipeline orchestration in `app/research/service/` and cross-stage
+contracts in `app/research/schema/`. Treat queue, cache, database, GitHub, and
+LLM calls as adapter concerns behind ports, with bindings resolved through
+dependency injection. Reuse `database/redis.py` for job-state cache access and
+keep Docker Compose as the main demo bootstrap path.
 
 ## Delivery Outline
 
 1. Extend configuration, routing, and Compose setup so the app, worker, Redis,
    and demo database can run together with one startup flow.
 2. Build strict Pydantic schemas for job submission, job status, GraphQL
-   payloads, processing context, AI output, stored results, and UI view state.
+  payloads, processing context, AI output, stored results, and report exchange
+  contracts, with structured Markdown report composition as the primary
+  human-facing output.
 3. Implement FastAPI research endpoints for page rendering, job submission, and
    status polling with Swagger-visible JSON contracts.
 4. Implement Redis-backed job state management and connect submission flow to
@@ -194,12 +209,15 @@ Compose as the main demo bootstrap path.
    perform GraphQL ingestion, AI analysis, and result persistence.
 6. Implement GitHub GraphQL and AI services optimized for fast demo execution,
    including bounded README and structure handling.
-7. Implement result persistence using PostgreSQL in Compose mode with a clear
+7. Define and wire queue, cache, database, GitHub, and LLM ports with adapter
+  implementations selected via dependency injection and environment
+  configuration.
+8. Implement result persistence using PostgreSQL in Compose mode with a clear
    SQLite fallback path for local non-container runs.
-8. Render the Jinja2 dashboard with instant metrics, AI skeletons, and
+9. Render the Jinja2 dashboard with instant metrics, AI skeletons, and
   short-polling upgrades from `pending` or `processing` to `completed` or
    `failed`.
-9. Add route, worker, state-transition, and failure-path tests covering job
+10. Add route, worker, state-transition, and failure-path tests covering job
    acceptance, polling, provider errors, worker failure, and stored result
    retrieval.
 

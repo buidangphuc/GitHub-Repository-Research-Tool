@@ -9,14 +9,14 @@
 
 - Reviewed `app/router.py`, `app/admin/`, `common/response/`, `core/conf.py`, `database/redis.py`, `middleware/`, and `README.md` for reuse opportunities.
 - Extend first: reuse the current FastAPI router aggregation, shared response envelopes, configuration system, Redis integration, and middleware chain before adding new orchestration or transport layers.
-- AI-specific extension: introduce `app/ai/` to manage prompt templates, prompt sanitization, LLM clients, and response parsing, plus `app/schemas/` for cross-feature Pydantic contracts used by structured AI outputs.
+- AI-specific extension: keep research orchestration and AI-facing logic inside `app/research/service/` and keep research contracts in `app/research/schema/` so the feature extends the existing feature-based package pattern instead of creating parallel top-level namespaces.
 - Justification: repository research is a hybrid pipeline from GitHub data extraction to context cleaning to LLM inference to normalized reporting. The MVP does not need a separate microservice, but it does need isolated AI orchestration so LLM concerns do not leak into repository-fetching services or transport adapters.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - AI-Assisted Repository Semantic Overview (Priority: P1)
 
-As a user evaluating an unfamiliar public GitHub repository, I want to submit its URL and quickly receive a structured report that combines deterministic repository facts with AI-generated semantic summaries so I can understand the repository's purpose and likely architecture without manually reading the entire README and file tree.
+As a user evaluating an unfamiliar public GitHub repository, I want to submit its URL and quickly receive a structured Markdown report that combines deterministic repository facts with AI-generated semantic summaries so I can understand the repository's purpose and likely architecture without manually reading the entire README and file tree.
 
 This journey starts with validated repository input, returns a `job_id` and immediate deterministic metadata when possible, sanitizes and truncates README and tree evidence for the AI stage, and requires the LLM to return JSON that conforms to the internal insight contract.
 
@@ -27,7 +27,7 @@ This journey starts with validated repository input, returns a `job_id` and imme
 **Acceptance Scenarios**:
 
 1. **Given** a valid public repository URL, **When** research starts, **Then** the system returns an accepted response with a `job_id`, persists initial job state, and exposes deterministic metadata as soon as it is available.
-2. **Given** a valid public repository with README and file tree evidence, **When** the AI stage completes, **Then** the system returns a structured JSON insight payload that accurately summarizes repository purpose and architecture without inventing features that are absent from the evidence.
+2. **Given** a valid public repository with README and file tree evidence, **When** the AI stage completes, **Then** the system returns a structured Markdown final report (with machine-readable JSON fields available through API contracts) that accurately summarizes repository purpose and architecture without inventing features that are absent from the evidence.
 3. **Given** a repository whose metadata or prior AI result is already cached for the same repository state, **When** research starts, **Then** the system reuses cached data and reduces unnecessary reprocessing or LLM cost.
 
 ---
@@ -87,7 +87,7 @@ This journey enforces prompt sanitization, deterministic truncation, partial-ana
 
 - One-repository-at-a-time research initiated from a public GitHub repository URL
 - Hybrid pipeline: GitHub GraphQL extraction, context sanitization, deterministic truncation, and LLM inference
-- AI-assisted semantic summarization, tech stack classification, health and risk assessment, and structured report composition
+- AI-assisted semantic summarization, tech stack classification, health and risk assessment, and structured Markdown report composition with machine-readable API contracts
 - Strict structured AI outputs that conform to internal Pydantic contracts
 - FastAPI submission and status endpoints with OpenAPI visibility
 - Progressive UX with an immediate accepted response, deterministic metadata as early as possible, and short polling for final insight delivery
@@ -117,23 +117,24 @@ This journey enforces prompt sanitization, deterministic truncation, partial-ana
 - **FR-007**: System MUST treat repository text as untrusted input and apply prompt-construction safeguards so repository content cannot override system instructions.
 - **FR-008**: The LLM integration MUST request structured output and reject or repair non-conforming responses until they match the internal `StructuredAIResponse` contract or the AI stage is marked unavailable.
 - **FR-009**: System MUST clearly separate deterministic facts from AI-generated insights in both API responses and the rendered report.
+- **FR-010**: System MUST produce a structured Markdown final report as the primary human-readable output, while preserving machine-readable JSON contracts for submission, status polling, and structured report data exchange.
 - **FR-011**: System MUST preserve an API-only fallback report when AI generation fails because of timeout, rate limit, content filtering, malformed JSON, or provider unavailability.
 - **FR-012**: System MUST cache AI responses for the same repository state, such as owner, name, and commit hash or equivalent freshness marker, to avoid repeated inference cost.
 - **FR-013**: System MUST validate all inter-stage payloads between GitHub extraction, sanitization, queue transport, AI inference, cache, database, and UI using strict Pydantic contracts before storing or returning them.
 - **FR-014**: System MUST store completed research results in a primary persistence layer so final reports can be reloaded after background processing finishes.
 - **FR-015**: System MUST provide deterministic failure outcomes for invalid input, missing jobs, queue or worker failures, GitHub provider errors, AI provider errors, and persistence failures.
 - **FR-016**: System MUST expose the JSON research endpoints through FastAPI-generated OpenAPI or Swagger UI for demo visibility.
-- **FR-017**: The default development and demo deployment MUST integrate with the existing task-processing stack, while queue, cache, database, and LLM providers are accessed through replaceable adapter interfaces rather than hard-coded business logic.
+- **FR-017**: The default development and demo deployment MUST integrate with the existing task-processing stack, and every queue, cache, database, and LLM integration MUST be invoked through explicit port interfaces with adapter implementations selected by dependency injection. Domain services MUST NOT instantiate vendor SDK clients directly.
 
 ### Non-Functional Requirements
 
-- **NFR-001**: For 95% of sampled valid requests under normal demo conditions, deterministic metadata MUST be available within 2 seconds and full AI-enriched results MUST be available within 15 seconds using progressive delivery.
+- **NFR-001**: For 95% of sampled valid requests under normal demo conditions, deterministic metadata MUST be available within 2 seconds and full AI-enriched results MUST be available within 30 seconds using progressive delivery.
 - **NFR-002**: The maximum payload sent to the LLM MUST be capped at the configured budget, such as 32,000 tokens, and larger payloads MUST be truncated deterministically.
 - **NFR-003**: If the AI stage fails for timeout, JSON parse error, content policy, or provider outage reasons, the system MUST return the deterministic report without a critical application error.
 - **NFR-004**: Repeated analysis requests for the same repository state SHOULD reuse cached AI output or previously persisted results to control cost and reduce latency.
 - **NFR-005**: The system MUST emit logs and metrics that make failures observable at the GitHub fetch, sanitization, queue, AI inference, response validation, persistence, and rendering stages.
 - **NFR-006**: The report and status experience MUST remain readable on common laptop and mobile viewport widths, and the default short-polling cadence MUST be configurable with a 2-second default.
-- **NFR-007**: The core application logic MUST NOT be tightly coupled to specific infrastructure choices such as Redis, SQS, PostgreSQL, or a single LLM provider. All external services, including databases, message queues, caches, and LLM APIs, MUST be abstracted using a Ports and Adapters pattern, and runtime implementations MUST be resolved through dependency injection and environment-based configuration.
+- **NFR-007**: The core application logic MUST NOT be tightly coupled to specific infrastructure choices such as Redis, SQS, PostgreSQL, or a single LLM provider. All external services, including databases, message queues, caches, and LLM APIs, MUST be abstracted using a Ports and Adapters pattern, runtime implementations MUST be resolved through dependency injection and environment-based configuration, and automated tests MUST verify that domain workflows execute using non-production adapter implementations without business-logic changes.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -149,7 +150,7 @@ This journey enforces prompt sanitization, deterministic truncation, partial-ana
 
 ### Measurable Outcomes
 
-- **SC-001**: In user acceptance testing, 95% of sampled valid submissions return a `job_id` and deterministic metadata within 2 seconds, and the full AI-enriched report within 15 seconds.
+- **SC-001**: In user acceptance testing, 95% of sampled valid submissions return a `job_id` and deterministic metadata within 2 seconds, and the full AI-enriched report within 30 seconds.
 - **SC-002**: The AI stage produces valid JSON conforming to the `StructuredAIResponse` schema in 99% of successful provider calls.
 - **SC-003**: Average token consumption per repository analysis stays within the configured budget threshold and is observable through application logging or metrics.
 - **SC-004**: In manual review across 20 edge-case repositories, the AI report does not invent dependencies or features not supported by README, manifest, or structure evidence.
