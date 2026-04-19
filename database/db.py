@@ -1,10 +1,9 @@
-import ssl
+import asyncio
 import sys
-import time
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.sql import text
 
 from common.log import log
@@ -15,7 +14,7 @@ from core.conf import settings
 db_url = settings.POSTGRES_URL
 
 # Initialize the asynchronous database engine and session factory
-engine = create_async_engine(db_url, echo=True)
+engine = create_async_engine(db_url, echo=settings.DATABASE_ECHO)
 AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 
@@ -24,6 +23,8 @@ async def init_db():
     log.info("Starting database initialization...")
 
     try:
+        import app.research.model.research  # noqa: F401
+
         async with engine.begin() as conn:
             # Create all tables from the Base class
             await conn.run_sync(Base.metadata.create_all)
@@ -74,7 +75,7 @@ async def check_database_connection(
                 log.warning(
                     f"Retrying Database connection... {remaining_retries} retries left"
                 )
-                time.sleep(retry_interval)
+                await asyncio.sleep(retry_interval)
 
 
-CurrentSession = Annotated[AsyncSessionLocal, Depends(get_db)]
+CurrentSession = Annotated[AsyncSession, Depends(get_db)]

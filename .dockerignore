@@ -2,7 +2,15 @@ __pycache__/
 venv/
 .venv/
 .python-version
+.git/
+.env*
+Dockerfile*
+.dockerignore
+*.log*
+dist/
+build/
+coverage/
+node_modules/
 
 logs/
 data/
-scripts/

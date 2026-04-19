@@ -4,7 +4,7 @@
 
 This artifact documents the simplified, event-driven data contracts for the MVP architecture. To minimize boilerplate while maintaining strict validation, we use Pydantic to enforce contracts at three primary boundaries: 
 1. **API Layer** (Client <-> Gateway)
-2. **Worker Layer** (Gateway <-> Redis <-> Celery)
+2. **Worker Layer** (Gateway <-> SQS/ElasticMQ <-> Async Polling Worker)
 3. **AI Layer** (Worker <-> LLM).
 
 ---
@@ -40,7 +40,24 @@ Returned every 2 seconds when the frontend polls `GET /api/status/{job_id}`.
 
 ---
 
-## 2. Internal / Worker Contracts (FastAPI ↔ Celery)
+## 2. Internal / Worker Contracts (FastAPI ↔ SQS/ElasticMQ ↔ Async Worker)
+
+### ResearchJobMessage  *(SQS message body — JSON serialised)*
+The payload placed on the SQS queue by the API Gateway and consumed by the polling worker. The worker validates this with strict Pydantic parsing before executing any pipeline stage; messages that fail validation are sent directly to the Dead-Letter Queue (DLQ).
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| job_id | string | Yes | UUID v4; must match an existing `ResearchJobRecord` |
+| repo_url | string | Yes | Canonical `https://github.com/{owner}/{repo}` URL |
+| enqueued_at | datetime | Yes | UTC ISO-8601 timestamp set by Gateway |
+| attempt | integer | Yes | Starts at 1; incremented by worker on retry before re-enqueue |
+| options | object | No | Optional analysis tuning forwarded from `ResearchRequest` |
+
+**Queue configuration**
+- Visibility timeout: 120 s (covers worst-case LLM round-trip)
+- Max receive count before DLQ: 3
+- DLQ name: `research-jobs-dlq`
+- Endpoint (local): `http://elasticmq:9324` (Compose service name)
+- Environment variables: `SQS_ENDPOINT_URL`, `SQS_QUEUE_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
 ### ParsedRepoTarget
 Used internally by the Worker after regex parsing the input URL.
@@ -96,7 +113,7 @@ The single, consolidated document saved to PostgreSQL/SQLite (JSONB) and returne
 
 The MVP limits job states to a simple, linear flow to avoid race conditions:
 
-1. `pending`: URL validated, Job ID generated, task sitting in Redis Queue.
-2. `processing`: Celery Worker picked up the task. (Optional: Can update `progress_msg` in Redis to show "Fetching GitHub Data" vs "Running AI Analysis").
-3. `completed`: Worker finished both GraphQL and LLM calls, saved `FinalResearchReport` to DB, and updated Redis.
-4. `failed`: Celery task threw an exception (e.g., Rate Limit, Invalid Repo, LLM Timeout). Error message is saved to Redis.
+1. `pending`: URL validated, Job ID generated, `ResearchJobMessage` published to SQS queue, state written to Redis.
+2. `processing`: SQS polling worker received the message (visibility timeout active). Worker updates Redis state and progress_msg at key milestones: "Fetching GitHub data" → "Running AI analysis".
+3. `completed`: Worker finished both GraphQL and LLM calls, saved `FinalResearchReport` to DB, updated Redis state, and deleted the SQS message (ack).
+4. `failed`: Worker hit max retry or unrecoverable error (e.g., invalid repo, LLM timeout after retries). Error message is saved to Redis; SQS message is abandoned to the DLQ after exhausting the max-receive-count.

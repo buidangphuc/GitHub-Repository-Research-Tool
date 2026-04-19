@@ -51,32 +51,17 @@ def register_middleware(app: FastAPI):
     app.add_middleware(RequestIdMiddleware)
 
 
-def register_app(init_db: bool = True) -> FastAPI:
-    if init_db:
+def register_app() -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        from database.db import check_database_connection
 
-        @asynccontextmanager
-        async def lifespan(app: FastAPI):
-            from database.db import check_database_connection, init_db
+        await check_database_connection(
+            retry_interval=settings.DATABASE_RETRY_INTERVAL,
+            max_retries=settings.DATABASE_MAX_RETRIES,
+        )
 
-            await check_database_connection(
-                retry_interval=settings.DATABASE_RETRY_INTERVAL,
-                max_retries=settings.DATABASE_MAX_RETRIES,
-            )
-            await init_db()
-
-            # Initialize dev data if in development environment
-            if settings.ENVIRONMENT.lower() == "dev":
-                try:
-                    log.info(
-                        "Development environment detected, initializing development data..."
-                    )
-                    from scripts.init_data import init_dev_data
-
-                    await init_dev_data()
-                except Exception as e:
-                    log.error(f"Failed to initialize development data: {str(e)}")
-
-            yield
+        yield
 
     app = FastAPI(
         title=settings.PROJECT_NAME,

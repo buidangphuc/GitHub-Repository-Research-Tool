@@ -43,6 +43,12 @@ Open the research page in a browser:
 http://127.0.0.1:8000/research
 ```
 
+For bind-mounted development with reload:
+
+```bash
+docker compose -f docker-compose.yaml -f docker-compose.local.yaml up --build
+```
+
 ## Smoke Test Scenarios
 
 ### Submit And Poll A Valid Repository

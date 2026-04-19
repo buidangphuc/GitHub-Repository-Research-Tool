@@ -1,67 +1,10 @@
-version: '3'
-
 services:
-  postgres:
-    image: postgres:16
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    container_name: postgres
-    restart: always
-    env_file:
-      - .env
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      TZ: UTC
+  app:
     volumes:
-      - postgres:/var/lib/postgresql/data
-    networks:
-      - network
+      - .:/app
+    command: ["uv", "run", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
 
-  redis:
-    image: redis
-    ports:
-      - "${REDIS_PORT}:6379"
-    container_name: redis
-    restart: always
-    env_file:
-      - .env
-    environment:
-      - TZ=UTC
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+  research-worker:
     volumes:
-      - redis:/data
-    networks:
-      - network
-
-  rabbitmq:
-    hostname: rabbitmq
-    image: rabbitmq:3.13.7
-    ports:
-      - "15672:15672"
-      - "${RABBITMQ_PORT}:5672"
-    container_name: rabbitmq
-    restart: always
-    env_file:
-      - .env
-    environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
-    volumes:
-      - rabbitmq:/var/lib/rabbitmq
-    networks:
-      - network
-
-networks:
-  network:
-    name: network
-    driver: bridge
-
-volumes:
-  postgres:
-    name: postgres_local
-  redis:
-    name: redis_local
-  rabbitmq:
-    name: rabbitmq_local
+      - .:/app
+    command: ["uv", "run", "python", "-m", "app.research.worker.sqs_worker"]

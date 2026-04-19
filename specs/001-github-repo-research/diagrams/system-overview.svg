@@ -1,0 +1,318 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1240" viewBox="0 0 1440 1240" role="img" aria-labelledby="title desc">
+  <title id="title">System Overview - AI-Native GitHub Repository Research Tool</title>
+  <desc id="desc">Architecture diagram showing the browser client, stateless FastAPI API, SQS queue, async worker, GitHub and LLM integrations, and Redis and PostgreSQL storage.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7f3ea"/>
+      <stop offset="55%" stop-color="#eef5f6"/>
+      <stop offset="100%" stop-color="#e5efe8"/>
+    </linearGradient>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#d5e2e3" opacity="0.55"/>
+    </pattern>
+    <linearGradient id="panelSync" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fdfefe"/>
+      <stop offset="100%" stop-color="#ecf5f7"/>
+    </linearGradient>
+    <linearGradient id="panelAsync" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffaf2"/>
+      <stop offset="100%" stop-color="#f4efe5"/>
+    </linearGradient>
+    <linearGradient id="panelAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff8e8"/>
+      <stop offset="100%" stop-color="#ffe7bc"/>
+    </linearGradient>
+    <linearGradient id="panelStore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4fbf7"/>
+      <stop offset="100%" stop-color="#e5f4ea"/>
+    </linearGradient>
+    <linearGradient id="cardBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f2f8fd"/>
+    </linearGradient>
+    <linearGradient id="cardSand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffdf8"/>
+      <stop offset="100%" stop-color="#f8f1e4"/>
+    </linearGradient>
+    <linearGradient id="cardStore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbfffd"/>
+      <stop offset="100%" stop-color="#ebf7ef"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#103642" flood-opacity="0.12"/>
+    </filter>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#103642" flood-opacity="0.09"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#1f6fd5"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#16835c"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#7b8690"/>
+    </marker>
+    <style>
+      .headline {
+        font-family: Avenir Next, Trebuchet MS, Helvetica, Arial, sans-serif;
+        fill: #17333b;
+      }
+      .title {
+        font-size: 34px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+      .subtitle {
+        font-size: 17px;
+        font-weight: 500;
+        fill: #44606a;
+      }
+      .section-chip {
+        font-family: Avenir Next, Trebuchet MS, Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+      }
+      .panel-title {
+        font-family: Avenir Next, Trebuchet MS, Helvetica, Arial, sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        fill: #17333b;
+      }
+      .panel-subtitle {
+        font-family: Avenir Next, Trebuchet MS, Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        fill: #55717b;
+      }
+      .card-title {
+        font-family: Avenir Next, Trebuchet MS, Helvetica, Arial, sans-serif;
+        font-size: 19px;
+        font-weight: 700;
+        fill: #17333b;
+      }
+      .card-text {
+        font-family: Trebuchet MS, Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        fill: #45626c;
+      }
+      .small {
+        font-size: 13px;
+      }
+      .tiny {
+        font-size: 12px;
+      }
+      .legend-text {
+        font-family: Trebuchet MS, Helvetica, Arial, sans-serif;
+        font-size: 13px;
+        fill: #3f5963;
+      }
+      .label {
+        font-family: Trebuchet MS, Helvetica, Arial, sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .panel {
+        stroke: #c5d8de;
+        stroke-width: 1.8;
+        filter: url(#shadow);
+      }
+      .card {
+        stroke: #c7d9df;
+        stroke-width: 1.5;
+        filter: url(#softShadow);
+      }
+      .chip-text {
+        font-family: Avenir Next, Trebuchet MS, Helvetica, Arial, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1440" height="1240" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1440" height="1240" fill="url(#dots)" opacity="0.7"/>
+
+  <g class="headline">
+    <text class="title" x="70" y="78">AI-Native GitHub Repository Research Tool</text>
+    <text class="subtitle" x="70" y="110">Core flow only: request intake, async processing, external calls, and state storage.</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="1110" y="54" width="242" height="92" rx="24" fill="url(#panelAccent)" stroke="#f0bf61" stroke-width="1.5"/>
+    <text class="card-title" x="1140" y="90">Async Boundary</text>
+    <text class="card-text" x="1140" y="116">API returns fast.</text>
+    <text class="card-text" x="1140" y="138">Worker handles AI.</text>
+  </g>
+
+  <g>
+    <rect x="70" y="154" width="154" height="34" rx="17" fill="#daf0f5" stroke="#93c7d3" stroke-width="1.2"/>
+    <text class="section-chip" x="99" y="177" fill="#1f6fd5">Request Path</text>
+  </g>
+
+  <g>
+    <rect x="352" y="626" width="176" height="34" rx="17" fill="#fff0d6" stroke="#f3bc66" stroke-width="1.2"/>
+    <text class="section-chip" x="395" y="649" fill="#d97706">Worker Path</text>
+  </g>
+
+  <g>
+    <rect class="panel" x="60" y="212" width="980" height="126" rx="30" fill="url(#panelSync)"/>
+    <g transform="translate(92 244)">
+      <rect x="0" y="0" width="44" height="34" rx="8" fill="#e7f4f9" stroke="#8bbfd0" stroke-width="1.4"/>
+      <rect x="0" y="0" width="44" height="8" rx="8" fill="#bde2ef"/>
+      <circle cx="10" cy="4" r="1.5" fill="#1f6fd5"/>
+      <circle cx="16" cy="4" r="1.5" fill="#d97706"/>
+      <circle cx="22" cy="4" r="1.5" fill="#16835c"/>
+    </g>
+    <text class="panel-title" x="152" y="260">Browser / API Client</text>
+    <g filter="url(#softShadow)">
+      <rect x="152" y="300" width="184" height="24" rx="12" fill="#ffffff" stroke="#cfe3ea" stroke-width="1.1"/>
+      <text class="chip-text" x="166" y="316" fill="#1f6fd5">POST /v1/research</text>
+      <rect x="350" y="300" width="298" height="24" rx="12" fill="#ffffff" stroke="#cfe3ea" stroke-width="1.1"/>
+      <text class="chip-text" x="364" y="316" fill="#1f6fd5">GET /v1/research/{job_id}/status</text>
+      <rect x="744" y="238" width="154" height="28" rx="14" fill="#fff7e7" stroke="#f2c05f" stroke-width="1.2"/>
+      <text class="chip-text" x="773" y="257" fill="#d97706">202 + Poll</text>
+    </g>
+  </g>
+
+  <g>
+    <rect class="panel" x="60" y="382" width="980" height="242" rx="32" fill="url(#panelSync)"/>
+    <text class="panel-title" x="92" y="424">FastAPI API</text>
+
+    <rect class="card" x="110" y="462" width="210" height="118" rx="22" fill="url(#cardBlue)"/>
+    <text class="card-title" x="136" y="495">URL Validator</text>
+    <text class="card-text" x="136" y="530">validate repo URL</text>
+    <text class="card-text" x="136" y="554">owner / repo</text>
+
+    <rect class="card" x="360" y="442" width="400" height="158" rx="26" fill="url(#cardBlue)"/>
+    <text class="card-title" x="388" y="477">Orchestration</text>
+    <text class="card-text" x="388" y="512">fetch facts</text>
+    <text class="card-text" x="388" y="536">persist pending</text>
+    <text class="card-text" x="388" y="560">cache state</text>
+    <text class="card-text" x="388" y="584">enqueue job</text>
+
+    <rect class="card" x="790" y="462" width="190" height="118" rx="22" fill="url(#cardBlue)"/>
+    <text class="card-title" x="816" y="495">Status API</text>
+    <text class="card-text" x="816" y="530">Redis first</text>
+    <text class="card-text" x="816" y="554">Postgres fallback</text>
+  </g>
+
+  <g>
+    <rect class="panel" x="330" y="662" width="440" height="118" rx="28" fill="url(#panelAccent)"/>
+    <text class="panel-title" x="370" y="706">SQS / ElasticMQ</text>
+    <text class="panel-subtitle" x="370" y="731">Queue decouples API from AI work.</text>
+    <g transform="translate(658 686)">
+      <rect x="0" y="0" width="60" height="14" rx="7" fill="#f6c46a" opacity="0.9"/>
+      <rect x="8" y="20" width="60" height="14" rx="7" fill="#f2b249" opacity="0.9"/>
+      <rect x="16" y="40" width="60" height="14" rx="7" fill="#d97706" opacity="0.9"/>
+    </g>
+    <rect x="628" y="724" width="106" height="22" rx="11" fill="#ffffff" stroke="#f0bf61" stroke-width="1.2"/>
+    <text class="chip-text" x="654" y="739" fill="#d97706">Main + DLQ</text>
+  </g>
+
+  <g>
+    <rect class="panel" x="60" y="822" width="980" height="222" rx="32" fill="url(#panelAsync)"/>
+    <text class="panel-title" x="92" y="864">Async Worker</text>
+
+    <rect class="card" x="110" y="888" width="170" height="110" rx="22" fill="url(#cardSand)"/>
+    <text class="card-title" x="136" y="922">GitHub Adapter</text>
+    <text class="card-text" x="136" y="956">fetch repo context</text>
+
+    <rect class="card" x="320" y="872" width="190" height="142" rx="24" fill="url(#cardSand)"/>
+    <text class="card-title" x="348" y="907">Context Sanitizer</text>
+    <text class="card-text" x="348" y="945">filter noise</text>
+    <text class="card-text" x="348" y="969">redact prompt injection</text>
+    <text class="card-text" x="348" y="993">trim to budget</text>
+
+    <rect class="card" x="550" y="872" width="190" height="142" rx="24" fill="url(#cardSand)"/>
+    <text class="card-title" x="578" y="907">LLM Adapter</text>
+    <text class="card-text" x="578" y="945">structured output</text>
+    <text class="card-text" x="578" y="969">parse + repair</text>
+
+    <rect class="card" x="780" y="888" width="180" height="110" rx="22" fill="url(#cardSand)"/>
+    <text class="card-title" x="808" y="922">Report Renderer</text>
+    <text class="card-text" x="808" y="956">final report</text>
+  </g>
+
+  <g>
+    <rect class="panel" x="60" y="1082" width="980" height="116" rx="30" fill="url(#panelStore)"/>
+    <text class="panel-title" x="92" y="1124">State Layer</text>
+
+    <g filter="url(#softShadow)">
+      <ellipse cx="330" cy="1148" rx="136" ry="16" fill="#eef8f1" stroke="#9cc8b1" stroke-width="1.4"/>
+      <rect x="194" y="1148" width="272" height="24" fill="url(#cardStore)" stroke="#9cc8b1" stroke-width="1.4"/>
+      <ellipse cx="330" cy="1172" rx="136" ry="16" fill="#dff1e6" stroke="#9cc8b1" stroke-width="1.4"/>
+      <text class="card-title" x="248" y="1165">PostgreSQL</text>
+      <text class="card-text tiny" x="246" y="1187">job record + report</text>
+    </g>
+
+    <g filter="url(#softShadow)">
+      <ellipse cx="730" cy="1148" rx="136" ry="16" fill="#eef8f1" stroke="#9cc8b1" stroke-width="1.4"/>
+      <rect x="594" y="1148" width="272" height="24" fill="url(#cardStore)" stroke="#9cc8b1" stroke-width="1.4"/>
+      <ellipse cx="730" cy="1172" rx="136" ry="16" fill="#dff1e6" stroke="#9cc8b1" stroke-width="1.4"/>
+      <text class="card-title" x="682" y="1165">Redis</text>
+      <text class="card-text tiny" x="660" y="1187">status + cache</text>
+    </g>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <g>
+      <circle cx="1154" cy="715" r="36" fill="#ffffff" stroke="#c6d7dd" stroke-width="1.4"/>
+      <circle cx="1204" cy="690" r="46" fill="#ffffff" stroke="#c6d7dd" stroke-width="1.4"/>
+      <circle cx="1268" cy="712" r="40" fill="#ffffff" stroke="#c6d7dd" stroke-width="1.4"/>
+      <rect x="1128" y="712" width="180" height="60" rx="30" fill="#ffffff" stroke="#c6d7dd" stroke-width="1.4"/>
+      <text class="card-title" x="1150" y="748">GitHub GraphQL</text>
+    </g>
+
+    <g>
+      <circle cx="1154" cy="930" r="36" fill="#ffffff" stroke="#c6d7dd" stroke-width="1.4"/>
+      <circle cx="1204" cy="905" r="46" fill="#ffffff" stroke="#c6d7dd" stroke-width="1.4"/>
+      <circle cx="1268" cy="927" r="40" fill="#ffffff" stroke="#c6d7dd" stroke-width="1.4"/>
+      <rect x="1128" y="927" width="180" height="60" rx="30" fill="#ffffff" stroke="#c6d7dd" stroke-width="1.4"/>
+      <text class="card-title" x="1176" y="963">LLM Provider</text>
+    </g>
+  </g>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 520 338 V 382" stroke="#1f6fd5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+    <text class="label" x="542" y="365" fill="#1f6fd5">submit / poll</text>
+
+    <path d="M 320 520 H 360" stroke="#1f6fd5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+    <text class="label" x="292" y="510" fill="#1f6fd5">validate</text>
+
+    <path d="M 560 600 V 662" stroke="#d97706" stroke-width="4" marker-end="url(#arrowOrange)"/>
+    <text class="label" x="594" y="636" fill="#d97706">enqueue</text>
+
+    <path d="M 550 780 V 822" stroke="#d97706" stroke-width="4" marker-end="url(#arrowOrange)"/>
+    <text class="label" x="576" y="808" fill="#d97706">consume</text>
+
+    <path d="M 280 943 H 320" stroke="#1f6fd5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+    <path d="M 510 943 H 550" stroke="#1f6fd5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+    <path d="M 740 943 H 780" stroke="#1f6fd5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+
+    <path d="M 760 521 H 950 V 742 H 1084" stroke="#1f6fd5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+    <text class="label" x="810" y="507" fill="#1f6fd5">fetch facts</text>
+
+    <path d="M 195 888 V 792 H 952 V 740 H 1084" stroke="#1f6fd5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+    <text class="label" x="402" y="780" fill="#1f6fd5">fetch context</text>
+
+    <path d="M 645 872 V 844 H 1084" stroke="#1f6fd5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+    <text class="label" x="772" y="832" fill="#1f6fd5">analyze</text>
+
+    <path d="M 980 520 H 1012 V 1160 H 866" stroke="#16835c" stroke-width="4" marker-end="url(#arrowGreen)"/>
+    <text class="label" x="1018" y="640" fill="#16835c">read state</text>
+
+    <path d="M 960 960 H 1008 V 1128 H 730" stroke="#16835c" stroke-width="4" stroke-dasharray="10 7" marker-end="url(#arrowGreen)"/>
+    <text class="label" x="1018" y="1034" fill="#16835c">cache</text>
+
+    <path d="M 930 998 V 1056 H 330 V 1148" stroke="#16835c" stroke-width="4" stroke-dasharray="10 7" marker-end="url(#arrowGreen)"/>
+    <text class="label" x="700" y="1070" fill="#16835c">save</text>
+  </g>
+</svg>
