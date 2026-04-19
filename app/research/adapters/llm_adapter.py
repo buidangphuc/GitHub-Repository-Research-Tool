@@ -18,6 +18,7 @@ class LLMAdapter(ILLMClient):
         timeout_seconds: int = settings.RESEARCH_LLM_TIMEOUT,
     ):
         self.api_key = api_key
+        self.base_url = base_url
         self.model_name = model_name
         self.timeout_seconds = timeout_seconds
 

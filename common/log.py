@@ -54,20 +54,41 @@ def _ensure_dir(path: str) -> None:
 
 
 def _format(json_mode: bool):
+    def _normalize_extras(record: dict[str, Any]) -> dict[str, Any]:
+        raw_extra = record["extra"]
+        normalized: dict[str, Any] = {}
+
+        nested_extra = raw_extra.get("extra")
+        if isinstance(nested_extra, dict):
+            normalized.update(
+                {key: value for key, value in nested_extra.items() if value is not None}
+            )
+
+        for key, value in raw_extra.items():
+            if key == "extra" or value is None:
+                continue
+            normalized[key] = value
+
+        return normalized
+
+    def _escape_loguru_braces(value: str) -> str:
+        return value.replace("{", "{{").replace("}", "}}")
+
     # Return a callable so we can inject request_id into each record
     def _human_format(record):
         rid = get_request_id()
-        extras = {k: v for k, v in record["extra"].items() if v is not None}
+        extras = _normalize_extras(record)
         extra_text = ""
         if extras:
             extra_parts = " ".join(f"{key}={value}" for key, value in extras.items())
             extra_text = f" {extra_parts}"
-        return (
+        rendered = (
             f"{record['time'].strftime('%Y-%m-%d %H:%M:%S')} "
             f"{record['level'].name:<8} "
             f"{record['name']}:{record['line']} "
             f"[req={rid}] - {record['message']}{extra_text}\n"
         )
+        return _escape_loguru_braces(rendered)
 
     def _json_format(record):
         rid = get_request_id()
@@ -78,8 +99,8 @@ def _format(json_mode: bool):
             "req": rid,
             "msg": record["message"],
         }
-        payload.update({k: v for k, v in record["extra"].items() if v is not None})
-        return json.dumps(payload, default=str) + "\n"
+        payload.update(_normalize_extras(record))
+        return _escape_loguru_braces(json.dumps(payload, default=str) + "\n")
 
     return _json_format if json_mode else _human_format
 
