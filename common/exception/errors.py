@@ -162,6 +162,49 @@ class ProcessingError(DebugError):
         super().__init__(msg=msg, data=data, debug_info=debug_info)
 
 
+class ResearchProblem(Exception):
+    def __init__(
+        self,
+        *,
+        status_code: int,
+        type_: str,
+        title: str,
+        detail: str | None = None,
+        instance: str | None = None,
+        headers: dict[str, Any] | None = None,
+        extra: dict[str, Any] | None = None,
+    ):
+        self.status_code = status_code
+        self.type = type_
+        self.title = title
+        self.detail = detail
+        self.instance = instance
+        self.headers = headers or {}
+        self.extra = extra or {}
+        super().__init__(detail or title)
+
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "type": self.type,
+            "title": self.title,
+            "status": self.status_code,
+        }
+        if self.detail:
+            payload["detail"] = self.detail
+        if self.instance:
+            payload["instance"] = self.instance
+        payload.update(self.extra)
+        return payload
+
+
+class LLMUnavailableError(Exception):
+    """Raised when the configured LLM provider cannot return a usable result."""
+
+
+class ContentPolicyError(Exception):
+    """Raised when the provider blocks analysis for policy reasons."""
+
+
 class StorageError(ServerError):
     """Base exception for storage operations."""
 

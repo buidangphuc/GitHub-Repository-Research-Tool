@@ -1,46 +1,26 @@
-import ssl
+import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from core.conf import settings  # import config từ pydantic_settings
-from database.base import Base
+import app.research.model.research  # noqa: F401
+from common.model import Base
+from core.conf import settings
 
-# Đọc config từ alembic.ini
 config = context.config
 
-# Cấu hình logging từ file alembic.ini
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Metadata để Alembic autogenerate
 target_metadata = Base.metadata
-
-# Lấy URL từ settings (pydantic_settings)
-DATABASE_URL = settings.MYSQL_URL
-
-# Convert từ async URL -> sync URL cho Alembic
-if DATABASE_URL.startswith("mysql+asyncmy"):
-    DATABASE_URL = DATABASE_URL.replace("mysql+asyncmy", "mysql+pymysql")
-
-print(f"Using database URL: {DATABASE_URL}")
-
-# Set URL vào config của Alembic
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
-
-# SSL config cho MySQL
-connect_args = {}
-if DATABASE_URL.startswith("mysql+pymysql"):
-    ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
-    connect_args["ssl"] = ssl_context
+config.set_main_option("sqlalchemy.url", settings.POSTGRES_URL)
 
 
 def run_migrations_offline():
     context.configure(
-        url=DATABASE_URL,
+        url=settings.POSTGRES_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -50,27 +30,27 @@ def run_migrations_offline():
         context.run_migrations()
 
 
-def run_migrations_online():
-    """Chạy migration trực tiếp với DB."""
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+def do_run_migrations(connection):
+    context.configure(connection=connection, target_metadata=target_metadata)
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_migrations_online():
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        connect_args=connect_args,
     )
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-        )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
 
-        with context.begin_transaction():
-            context.run_migrations()
+    await connectable.dispose()
 
 
-# Gọi hàm tương ứng tùy theo mode
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_migrations_online())

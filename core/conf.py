@@ -18,33 +18,59 @@ class Settings(BaseSettings):
 
     # print(model_config)
     # Env Config
-    ENVIRONMENT: str
+    ENVIRONMENT: str = "dev"
     FASTAPI_ROOT_PATH: str = ""
 
     DATABASE_RETRY_INTERVAL: int = 1
     DATABASE_MAX_RETRIES: int = 3
+    DATABASE_ECHO: bool = False
 
     # PostgreSQL
-    POSTGRES_HOST: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
+    POSTGRES_HOST: str = "127.0.0.1"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "postgres"
+    POSTGRES_DB: str = "research"
 
     @computed_field
     @property
     def POSTGRES_URL(self) -> str:
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}/{self.POSTGRES_DB}"
+        return (
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
+            f"{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
 
     # Redis
-    REDIS_HOST: str
-    REDIS_PORT: int
-    REDIS_PASSWORD: str
-    REDIS_DATABASE: int
+    REDIS_HOST: str = "127.0.0.1"
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = ""
+    REDIS_DATABASE: int = 0
     REDIS_TIMEOUT: int = 5
+    RESEARCH_STATUS_TTL_SECONDS: int = 3600
+    RESEARCH_CACHE_TTL_SECONDS: int = 86400
+    RESEARCH_SQS_WAIT_TIME_SECONDS: int = 20
+    RESEARCH_SQS_VISIBILITY_TIMEOUT_SECONDS: int = 120
+    RESEARCH_MAX_QUEUE_ATTEMPTS: int = 3
+
+    AWS_REGION: str = "us-east-1"
+    AWS_ACCESS_KEY_ID: str = "test"
+    AWS_SECRET_ACCESS_KEY: str = "test"
+    SQS_ENDPOINT_URL: str = "http://127.0.0.1:9324"
+    SQS_QUEUE_URL: str = "http://127.0.0.1:9324/000000000000/research-jobs"
+    SQS_DLQ_URL: str = "http://127.0.0.1:9324/000000000000/research-jobs-dlq"
+
     # OpenAI API
-    OPENAI_API_KEY: str = "sk-xxxxxx"
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     # LLM Model
     DEFAULT_LLM_MODEL: str = "gpt-4o-mini"
+    GITHUB_TOKEN: str = ""
+    GITHUB_API_URL: str = "https://api.github.com/graphql"
+    RESEARCH_POLL_INTERVAL_SECONDS: int = 2
+    RESEARCH_AI_TOKEN_BUDGET: int = 32000
+    RESEARCH_GITHUB_TIMEOUT: int = 15
+    RESEARCH_LLM_TIMEOUT: int = 30
+    RESEARCH_MAX_TREE_ENTRIES: int = 100
 
     # Env Token
     # TOKEN_SECRET_KEY: str
@@ -91,7 +117,7 @@ class Settings(BaseSettings):
     ]
 
     # JWT
-    JWT_SECRET_KEY: str
+    JWT_SECRET_KEY: str = "change-me"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRES_IN: int = 60 * 60 * 24 * 7  # 1 week
 

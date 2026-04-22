@@ -8,8 +8,15 @@
 ## Summary
 
 [Describe the user-facing capability, the integration paths it touches, the
-shared services or contracts it extends, and how the change reduces
-duplication while improving integratability, reliability, or scale.]
+shared services or contracts it extends, which existing repository assets it
+reuses first, and how the change reduces duplication while improving
+integratability, reliability, or scale.]
+
+## Existing Asset Review
+
+[List the existing files, directories, scripts, and operational assets reviewed
+for reuse. Explain which ones will be extended and justify each new file,
+directory, or workflow that must be introduced.]
 
 ## Technical Context
 
@@ -19,20 +26,23 @@ duplication while improving integratability, reliability, or scale.]
   the iteration process.
 -->
 
-**Language/Version**: Python 3.11+  
-**Primary Dependencies**: FastAPI, Pydantic, httpx, provider SDKs, pytest  
-**Storage**: N/A for MVP unless a feature explicitly introduces persistence  
-**Testing**: pytest, pytest-asyncio, contract tests for adapters and canonical contracts  
-**Target Platform**: Server-side Python service on macOS/Linux  
-**Project Type**: Async integration and report orchestration service  
-**Performance Goals**: Keep latency predictable while allowing new providers, higher traffic, and deeper analysis without rewriting core flows  
-**Constraints**: Respect GitHub rate limits, keep services stateless where practical, forbid source-specific parsing outside adapters, and avoid duplicate business logic  
-**Scale/Scope**: Public GitHub repositories only; single-repository analysis per request in the MVP, with future growth handled through adapters and canonical contracts
+**Language/Version**: Python 3.12+  
+**Primary Dependencies**: FastAPI, Pydantic v2, SQLAlchemy, Redis, Celery, httpx, pytest  
+**Storage**: SQL database plus Redis where the feature requires persistence or caching  
+**Testing**: pytest, pytest-asyncio, API tests, contract tests, and regression checks for reused modules  
+**Target Platform**: Server-side Python service on macOS/Linux with Docker Compose  
+**Project Type**: Feature-based FastAPI backend service  
+**Performance Goals**: Keep latency predictable while allowing more traffic, deeper workflows, and new integrations without rewriting core flows  
+**Constraints**: Extend existing `app/`, `common/`, `core/`, `database/`, `middleware/`, `socketio/`, `utils/`, and `scripts/` assets before creating new modules; keep I/O async where it already is; forbid duplicate business logic; keep Git workflow manual unless the user opts into hooks  
+**Scale/Scope**: Prefer localized changes inside existing feature packages and shared infrastructure; any new top-level package requires explicit justification
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
+- **Existing Assets First**: Does the plan list the current files,
+  directories, scripts, and infrastructure it will extend, and justify every
+  new module or workflow it introduces?
 - **Reusable Service Architecture**: Does the design extend shared services,
   adapters, or abstractions instead of introducing duplicated function logic?
 - **Integration-First Data Contracts**: Do all external payloads enter through
@@ -67,31 +77,36 @@ specs/[###-feature]/
 -->
 
 ```text
-src/
-├── api/
-├── adapters/
-├── contracts/
-├── domain/
-├── orchestration/
-├── reporting/
-├── services/
-└── shared/
+app/
+├── router.py
+├── admin/
+│   ├── api/v1/
+│   ├── crud/
+│   ├── model/
+│   ├── schema/
+│   └── service/
+└── task/
+  ├── api/v1/
+  ├── celery_task/
+  ├── schema/
+  └── service/
 
+common/
+core/
+database/
+middleware/
+socketio/
+utils/
+scripts/
 tests/
-├── architecture/
-├── contract/
-├── integration/
-└── unit/
 ```
 
-**Structure Decision**: Use a layered async backend service. Place HTTP
-boundaries in `src/api/`, provider-specific integrations in `src/adapters/`,
-canonical internal contracts in `src/contracts/`, core business rules in
-`src/domain/`, flow composition in `src/orchestration/`, reusable operational
-and support services in `src/services/`, report formatting in `src/reporting/`,
-and shared utilities in `src/shared/`. No source-specific parsing may escape
-the adapter layer, and no shared business behavior may be reimplemented in
-parallel modules.
+**Structure Decision**: Use the repository's existing FastAPI layout. Place
+feature-specific API, service, schema, model, and CRUD changes inside the
+matching package under `app/`; keep shared behavior in `common/`, `core/`,
+`database/`, `middleware/`, `socketio/`, and `utils/`; reuse `scripts/` and
+existing infrastructure files for operational workflows. No new top-level
+package should be introduced when an existing directory can absorb the change.
 
 ## Complexity Tracking
 

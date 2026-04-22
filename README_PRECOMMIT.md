@@ -2,11 +2,11 @@
 
 ## Install
 ```bash
-poetry add --dev pre-commit
-poetry run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
+uv sync --dev
+uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
 # Initial baseline for secrets (optional: refresh later)
-poetry run detect-secrets scan > .secrets.baseline
-poetry run pre-commit run --all-files
+uv run detect-secrets scan > .secrets.baseline
+uv run pre-commit run --all-files
 ```
 ## Tips
 - Adjust the paths in the `bandit` hooks and `exclude` to match your actual layout (e.g., `backend/`, `project/src/`).

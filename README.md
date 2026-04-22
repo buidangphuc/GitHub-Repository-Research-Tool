@@ -1,91 +1,95 @@
-# FastAPI Backend Template
+# GitHub Repository Research Tool
 
-This repository contains a template for building backend services using FastAPI.
+FastAPI + Celery application for researching public GitHub repositories. The app accepts a repository URL, returns a background `job_id`, polls status from Redis, and stores the final deterministic + AI-assisted report in PostgreSQL.
+
+## Runtime Model
+
+- Dependencies are managed with `uv`
+- The default way to run the stack is Docker Compose
+- Compose starts the API app, Celery worker, PostgreSQL, and Redis together
 
 ## Requirements
 
-- Docker and Docker Compose
-- Python 3.12+
-- Poetry (Python dependency management tool)
+- Docker with Docker Compose
+- `uv` for local dependency and test commands
 
-## Repository Structure
+## Quick Start
 
-```plaintext
-backend/
-├── app/                   # Feature-based modules with versioned API routers
-│   ├── admin/api/v1/
-│   ├── task/api/v1/
-│   └── router.py          # Central router aggregating all feature routers
-├── common/                # Shared resources (constants, exceptions, responses, security)
-│   ├── log/
-│   ├── exception/
-│   ├── response/
-│   └── security/
-├── core/                  # Core setup: configuration, DI, app registration
-│   ├── conf/
-│   ├── conf_path/
-│   └── registrar/
-├── database/              # Database and cache layers
-│   ├── db/                # ORM models, sessions, migrations
-│   └── redis/             # Redis client and caching utilities
-├── middleware/            # Custom FastAPI middleware (logging, error handling, rate limiting, etc.)
-├── utils/                 # Generic helpers and utility functions
-└── tests/                 # Unit and integration tests
-```
+1. Create a local env file.
 
-## Running the Application
-
-### Using Docker Compose (Recommended)
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd <repository-directory>
-```
-
-2. Start the development environment:
-```bash
-docker-compose -f docker-compose.local.yml up -d
-```
-
-This will start all necessary services (API, database, etc.) in development mode with hot reloading enabled.
-
-3. Access the API:
-   - API: http://localhost:8000
-   - Swagger UI: http://localhost:8000/docs
-   - ReDoc: http://localhost:8000/redoc
-
-4. Stop the services:
-```bash
-docker-compose -f docker-compose.local.yml down
-```
-
-### Manual Setup
-
-1. Install Poetry:
-```bash
-pip install poetry
-```
-
-2. Install dependencies:
-```bash
-poetry install
-```
-
-3. Set up environment variables:
 ```bash
 cp .env.example .env
 ```
 
-4. Run the application:
+2. Fill in at least `GITHUB_TOKEN`. `OPENAI_API_KEY` is optional; without it the app falls back to deterministic-only reports.
+
+3. Start the full stack.
+
 ```bash
-poetry run ./scripts/start_dev.sh
+docker compose up --build
 ```
 
-### Environment Variables
+4. Open the app.
 
-Key environment variables include:
+```text
+http://127.0.0.1:8000/research
+```
 
-- `DATABASE_URL`: Database connection string
-- `SECRET_KEY`: Secret key for token signing
-- `ENVIRONMENT`: Development/staging/production
+5. Open the API docs.
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+## Development Compose Override
+
+For bind-mounted code and auto-reload:
+
+```bash
+docker compose -f docker-compose.yaml -f docker-compose.local.yaml up --build
+```
+
+This keeps infrastructure in containers and runs the API/worker with `uv run` commands against the mounted source tree.
+
+## Local Commands With uv
+
+Install dependencies into the local `.venv`:
+
+```bash
+uv sync --dev
+```
+
+Run the API outside Docker if you only want infra in Compose:
+
+```bash
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Run the focused research test suite:
+
+```bash
+uv run pytest tests/research -q
+```
+
+Regenerate the lock file and exported requirements snapshot after dependency changes:
+
+```bash
+uv lock
+uv export --no-dev --format requirements-txt -o requirements.txt
+```
+
+## Services Started By Compose
+
+- `app`: FastAPI server on port `8000`
+- `worker`: Celery worker for background repository analysis
+- `postgres`: PostgreSQL primary persistence
+- `redis`: Redis for Celery broker/result backend and status snapshots
+
+## Important Environment Variables
+
+- `GITHUB_TOKEN`: required for GitHub GraphQL calls
+- `OPENAI_API_KEY`: optional AI analysis provider key
+- `POSTGRES_*`: PostgreSQL connection values
+- `REDIS_*`: Redis connection values
+- `RESEARCH_POLL_INTERVAL_SECONDS`: browser polling cadence
+- `RESEARCH_AI_TOKEN_BUDGET`: deterministic truncation budget for AI context

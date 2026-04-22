@@ -1,172 +1,108 @@
 services:
-  fba_server:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    image: fba_server:latest
-    container_name: fba_server
-    restart: always
+    image: github-repository-research-tool:latest
+    container_name: research_app
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      SQS_ENDPOINT_URL: ${SQS_ENDPOINT_URL:-http://elasticmq:9324}
+      SQS_QUEUE_URL: ${SQS_QUEUE_URL:-http://elasticmq:9324/000000000000/research-jobs}
+      SQS_DLQ_URL: ${SQS_DLQ_URL:-http://elasticmq:9324/000000000000/research-jobs-dlq}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     depends_on:
-      - fba_mysql
-      - fba_redis
-      - fba_celery
-    volumes:
-      - ./deploy/backend/docker-compose/.env.server:/fba/backend/.env
-      - fba_static:/fba/backend/app/static
-    networks:
-      - fba_network
-    command:
-      - bash
-      - -c
-      - |
-        wait-for-it -s fba_mysql:3306 -s fba_redis:6379 -t 300
-        supervisord -c /etc/supervisor/supervisord.conf
-        supervisorctl restart
-
-  fba_mysql:
-    image: mysql:8.0.41
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticmq:
+        condition: service_started
     ports:
-      - "${DOCKER_MYSQL_MAP_PORT:-3306}:3306"
-    container_name: fba_mysql
-    restart: always
-    environment:
-      MYSQL_DATABASE: fba
-      MYSQL_ROOT_PASSWORD: 123456
-      TZ: Asia/Shanghai
-    volumes:
-      - fba_mysql:/var/lib/mysql
-    networks:
-      - fba_network
-    command:
-      --default-authentication-plugin=mysql_native_password
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_general_ci
-      --lower_case_table_names=1
+      - "${APP_PORT:-8000}:8000"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-#  fba_postgres:
-#    image: postgres:16
-#    ports:
-#      - "${DOCKER_POSTGRES_MAP_PORT:-5432}:5432"
-#    container_name: fba_postgres
-#    restart: always
-#    environment:
-#      POSTGRES_DB: fba
-#      POSTGRES_PASSWORD: 123456
-#      TZ: Asia/Shanghai
-#    volumes:
-#      - fba_postgres:/var/lib/postgresql/data
-#    networks:
-#      - fba_network
-
-  fba_redis:
-    image: redis
-    ports:
-      - "${DOCKER_REDIS_MAP_PORT:-6379}:6379"
-    container_name: fba_redis
-    restart: always
-    environment:
-      - TZ=Asia/Shanghai
-    volumes:
-      - fba_redis:/data
-    networks:
-      - fba_network
-
-  fba_nginx:
-    image: nginx
-    ports:
-      - "8000:80"
-    container_name: fba_nginx
-    restart: always
-    depends_on:
-      - fba_server
-    volumes:
-      - ./deploy/backend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - fba_static:/www/fba_server/backend/static
-      - fba_static_upload:/www/fba_server/backend/static/upload
-    networks:
-      - fba_network
-
-#  fba_ui:
-#    build:
-#      context: /root/fastapi_best_architecture_ui
-#      dockerfile: Dockerfile
-#    image: fba_ui:latest
-#    ports:
-#      - "80:80"
-#      - "443:443"
-#    container_name: fba_ui
-#    restart: always
-#    depends_on:
-#      - fba_server
-#    command:
-#      - nginx
-#      - -g
-#      - daemon off;
-#    volumes:
-#      # - local_ssl_pem_path:/etc/ssl/xxx.pem
-#      # - local_ssl_key_path:/etc/ssl/xxx.key
-#      - fba_static:/www/fba_server/backend/static
-#    networks:
-#      - fba_network
-
-  fba_rabbitmq:
-    hostname: fba_rabbitmq
-    image: rabbitmq:3.13.7
-    ports:
-      - "15672:15672"
-      - "5672:5672"
-    container_name: fba_rabbitmq
-    restart: always
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    volumes:
-      - fba_rabbitmq:/var/lib/rabbitmq
-    networks:
-      - fba_network
-
-  fba_celery:
+  research-worker:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - SERVER_TYPE=celery
-    image: fba_celery:latest
-    ports:
-      - "8555:8555"
-    container_name: fba_celery
-    restart: always
+    image: github-repository-research-tool:latest
+    container_name: research_worker
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      SQS_ENDPOINT_URL: ${SQS_ENDPOINT_URL:-http://elasticmq:9324}
+      SQS_QUEUE_URL: ${SQS_QUEUE_URL:-http://elasticmq:9324/000000000000/research-jobs}
+      SQS_DLQ_URL: ${SQS_DLQ_URL:-http://elasticmq:9324/000000000000/research-jobs-dlq}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     depends_on:
-      - fba_rabbitmq
-    volumes:
-      - ./deploy/backend/docker-compose/.env.server:/fba/backend/.env
-    networks:
-      - fba_network
-    command:
-      - bash
-      - -c
-      - |
-        wait-for-it -s fba_rabbitmq:5672 -t 300
-        supervisord -c /etc/supervisor/supervisord.conf
-        supervisorctl restart
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticmq:
+        condition: service_started
+    command: ["uv", "run", "python", "-m", "app.research.worker.sqs_worker"]
 
-networks:
-  fba_network:
-    name: fba_network
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.10.10.0/24
+  elasticmq:
+    image: softwaremill/elasticmq-native:1.6.15
+    container_name: research_elasticmq
+    restart: unless-stopped
+    ports:
+      - "9324:9324"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: research_postgres
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-research}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-research}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: research_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - redis_data:/data
 
 volumes:
-  fba_mysql:
-    name: fba_mysql
-  fba_redis:
-    name: fba_redis
-  fba_static:
-    name: fba_static
-  fba_static_upload:
-    name: fba_static_upload
-  fba_rabbitmq:
-    name: fba_rabbitmq
+  postgres_data:
+  redis_data:

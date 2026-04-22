@@ -1,1 +1,2 @@
-poetry export --without-hashes --format=requirements.txt > requirements.txt
+uv lock
+uv export --no-dev --format requirements-txt -o requirements.txt

@@ -1,4 +1,6 @@
+import json
 import sys
+from typing import Any
 
 from redis.asyncio import Redis
 from redis.exceptions import AuthenticationError, TimeoutError
@@ -56,6 +58,21 @@ class RedisCli(Redis):
                 keys.append(key)
         if keys:
             await self.delete(*keys)
+
+    async def set_json(
+        self, key: str, value: Any, expire_seconds: int | None = None
+    ) -> None:
+        payload = json.dumps(value, default=str)
+        if expire_seconds is None:
+            await self.set(key, payload)
+            return
+        await self.set(key, payload, ex=expire_seconds)
+
+    async def get_json(self, key: str) -> Any | None:
+        payload = await self.get(key)
+        if payload is None:
+            return None
+        return json.loads(payload)
 
 
 # Redis Client

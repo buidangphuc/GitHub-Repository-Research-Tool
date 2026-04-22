@@ -13,6 +13,10 @@ the feature specification requires them, but adapter integrity, canonical
 contract mapping, duplicate-logic prevention, scalability boundaries, and
 observability tasks are NEVER optional for this project.
 
+**Reuse Audit**: Tasks MUST start from the assets already reviewed in spec.md
+and plan.md. When a new file, directory, or workflow is required, include the
+justification directly in the task description.
+
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -23,10 +27,10 @@ observability tasks are NEVER optional for this project.
 
 ## Path Conventions
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- **Feature modules**: `app/<feature>/api/v1/`, `app/<feature>/service/`, `app/<feature>/schema/`, `app/<feature>/model/`, `app/<feature>/crud/`
+- **Shared backend infrastructure**: `common/`, `core/`, `database/`, `middleware/`, `socketio/`, `utils/`
+- **Operational assets**: `scripts/`, `alembic/`, `Dockerfile`, `docker-compose*.yaml`
+- Paths shown below assume this repository layout - adjust only when plan.md justifies a different location
 
 <!-- 
   ============================================================================
@@ -51,9 +55,9 @@ observability tasks are NEVER optional for this project.
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create layered project structure per implementation plan
-- [ ] T002 Initialize Python project with FastAPI, Pydantic, HTTP client, provider SDK, and testing dependencies
-- [ ] T003 [P] Configure linting, formatting, and architecture guardrails against duplicated logic
+- [ ] T001 Review reusable assets in app/, common/, core/, database/, middleware/, socketio/, utils/, scripts/, and infra files; record the planned extension points
+- [ ] T002 Extend the existing FastAPI feature structure per implementation plan without creating an unnecessary top-level package
+- [ ] T003 [P] Configure linting, formatting, and architecture guardrails against duplicated logic and unjustified new modules
 
 ---
 
@@ -65,12 +69,12 @@ observability tasks are NEVER optional for this project.
 
 Examples of foundational tasks (adjust based on your project):
 
-- [ ] T004 Define boundary schemas and canonical contracts in src/contracts/ and src/models/
-- [ ] T005 [P] Implement reusable adapter interfaces and provider integration utilities in src/adapters/
-- [ ] T006 [P] Setup API routing, dependency wiring, and request validation in src/api/
-- [ ] T007 Create orchestration pipelines for fetch -> validate -> map -> analyze -> render in src/orchestration/
-- [ ] T008 Build shared mapping, context, and domain services in src/services/ and src/shared/
-- [ ] T009 Setup structured logging, error taxonomy, concurrency limits, and configuration management
+- [ ] T004 Define or extend boundary schemas and canonical contracts in app/*/schema/, app/*/model/, and common/
+- [ ] T005 [P] Implement reusable CRUD, adapter, or integration utilities in app/*/crud/, database/, or shared provider clients
+- [ ] T006 [P] Setup API routing, dependency wiring, and request validation in app/router.py and app/*/api/
+- [ ] T007 Create orchestration or background flows for fetch -> validate -> map -> analyze -> render in app/*/service/, middleware/, or app/task/celery_task/
+- [ ] T008 Build shared mapping, context, and domain services in common/, utils/, core/, and existing feature services
+- [ ] T009 Setup structured logging, error taxonomy, concurrency limits, auth, and configuration management in common/, common/security/, middleware/, and core/
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -91,12 +95,12 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Add or extend canonical contracts in src/contracts/[file].py or src/models/[file].py
-- [ ] T013 [P] [US1] Extend provider adapter or mapping logic in src/adapters/[provider]/[file].py
-- [ ] T014 [US1] Extend shared domain service or orchestration flow in src/services/[service].py or src/orchestration/[flow].py
-- [ ] T015 [US1] Implement endpoint or pipeline entry point in src/api/[file].py
+- [ ] T012 [P] [US1] Add or extend schemas and models in app/[feature]/schema/[file].py or app/[feature]/model/[file].py
+- [ ] T013 [P] [US1] Extend CRUD, adapter, or mapping logic in app/[feature]/crud/[file].py, database/[file].py, or an existing provider helper
+- [ ] T014 [US1] Extend shared domain service or orchestration flow in app/[feature]/service/[file].py, middleware/[file].py, or app/task/celery_task/[file].py
+- [ ] T015 [US1] Implement endpoint or router entry point in app/[feature]/api/v1/[file].py and register it through app/router.py
 - [ ] T016 [US1] Add observability, deterministic errors, and scale guards without duplicating existing logic
-- [ ] T017 [US1] Render output through shared reporting components in src/reporting/[file].py
+- [ ] T017 [US1] Render output through shared response, schema, or serialization components in common/response/[file].py, common/schema.py, or the existing feature package
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -115,10 +119,10 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Extend canonical contracts or mapping rules in src/contracts/[entity].py or src/models/[entity].py
-- [ ] T021 [US2] Extend shared service or orchestration logic in src/services/[service].py or src/orchestration/[flow].py
-- [ ] T022 [US2] Implement API or pipeline integration in src/api/[file].py
-- [ ] T023 [US2] Integrate with existing adapters, contracts, shared services, and report components as needed
+- [ ] T020 [P] [US2] Extend schemas, models, or mapping rules in app/[feature]/schema/[entity].py, app/[feature]/model/[entity].py, or common/
+- [ ] T021 [US2] Extend shared service or orchestration logic in app/[feature]/service/[file].py, middleware/[file].py, or app/task/service/[file].py
+- [ ] T022 [US2] Implement API or pipeline integration in app/[feature]/api/v1/[file].py or app/router.py
+- [ ] T023 [US2] Integrate with existing CRUD, contracts, shared services, middleware, and response helpers as needed
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -137,9 +141,9 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Extend contracts, transforms, or report sections in src/contracts/[entity].py, src/models/[entity].py, or src/reporting/[file].py
-- [ ] T027 [US3] Implement service or orchestration logic in src/services/[service].py or src/orchestration/[flow].py
-- [ ] T028 [US3] Implement endpoint or reporting behavior in src/[location]/[file].py
+- [ ] T026 [P] [US3] Extend schemas, transforms, or response sections in app/[feature]/schema/[entity].py, app/[feature]/model/[entity].py, common/response/[file].py, or utils/[file].py
+- [ ] T027 [US3] Implement service or orchestration logic in app/[feature]/service/[file].py, middleware/[file].py, or app/task/celery_task/[file].py
+- [ ] T028 [US3] Implement endpoint or reporting behavior in app/[feature]/api/v1/[file].py, common/response/[file].py, or another justified existing location
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -208,8 +212,8 @@ Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
 Task: "Integration test for [user journey] in tests/integration/test_[name].py"
 
 # Launch all models for User Story 1 together:
-Task: "Create [Entity1] model in src/models/[entity1].py"
-Task: "Create [Entity2] model in src/models/[entity2].py"
+Task: "Create or extend [Entity1] schema in app/[feature]/schema/[entity1].py"
+Task: "Create or extend [Entity2] model in app/[feature]/model/[entity2].py"
 ```
 
 ---
@@ -252,6 +256,6 @@ With multiple developers:
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing when tests are included
 - Always include tasks for adapter integrity, canonical contract reuse, duplicate-logic prevention, and observability
-- Commit after each task or logical group
+- Record manual Git steps separately when needed; do not assume hook-driven commits
 - Stop at any checkpoint to validate story independently
 - Avoid: vague tasks, same file conflicts, duplicated function logic, and source-specific parsing outside adapters

@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repository Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0d1117;
+            --bg-card: #161b22;
+            --bg-input: #0d1117;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent-blue: #2f81f7;
+            --button-blue: #234687;
+            --button-blue-hover: #2b56a3;
+            --success-green: #3fb950;
+            --warning-yellow: #d29922;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 40px 20px;
+        }
+
+        /* Utility */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 8px; }
+        .gap-4 { gap: 16px; }
+        .text-secondary { color: var(--text-secondary); }
+
+        /* --- View 1: Hero / Search --- */
+        #search-view {
+            margin-top: 10vh;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .logo-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        .logo-box svg { fill: var(--accent-blue); width: 32px; height: 32px; }
+        #search-view h1 { font-size: 2.2rem; font-weight: 600; margin-bottom: 12px; }
+        #search-view p.subtitle { color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin-bottom: 40px; }
+        
+        .search-form {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 16px;
+        }
+        .input-group {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0 16px;
+        }
+        .input-group svg { fill: var(--text-secondary); width: 20px; height: 20px; }
+        .input-group input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 14px 12px;
+            outline: none;
+        }
+        .search-btn {
+            background: var(--button-blue);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 8px;
+            padding: 0 32px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .search-btn:hover { background: var(--button-blue-hover); }
+
+        /* --- View 2: Terminal Loading --- */
+        #loading-view {
+            margin-top: 10vh;
+            width: 100%;
+            max-width: 800px;
+        }
+        .terminal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            min-height: 300px;
+        }
+        .term-header { color: var(--text-secondary); margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;}
+        .term-line { margin-bottom: 12px; display: flex; gap: 12px; opacity: 0; animation: fadeIn 0.3s forwards;}
+        .term-prompt { color: var(--success-green); font-weight: bold; }
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 18px;
+            background-color: var(--success-green);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* --- View 3: Results Dashboard --- */
+        #results-view { width: 100%; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .dashboard-header h2 { font-size: 1.2rem; font-weight: 600; }
+        .btn-outline {
+            background: transparent; border: 1px solid var(--border-color); color: var(--text-primary);
+            padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
+        }
+        
+        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px;}
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        /* Repo Header Card */
+        .repo-title { font-size: 1.8rem; font-weight: 600; margin-bottom: 8px; }
+        .repo-title span { color: var(--accent-blue); }
+        .badges { display: flex; gap: 12px; margin-top: 16px; }
+        .badge { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; border: 1px solid var(--border-color); }
+        .badge svg { width: 14px; height: 14px; fill: var(--text-secondary); }
+
+        /* Languages */
+        .lang-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 16px; }
+        .lang-js { background: #f1e05a; width: 65.2%; }
+        .lang-ts { background: #3178c6; width: 28.4%; }
+        .lang-html { background: #e34c26; width: 3.8%; }
+        .lang-css { background: #563d7c; width: 2.1%; }
+        .lang-list { display: flex; flex-direction: column; gap: 8px; }
+        .lang-item { display: flex; justify-content: space-between; font-size: 0.9rem; }
+        .lang-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+
+        /* Activity Graph (Mock) */
+        .activity-graph { height: 120px; width: 100%; background: linear-gradient(180deg, rgba(47,129,247,0.1) 0%, rgba(47,129,247,0) 100%); position: relative; border-bottom: 1px solid var(--border-color); display: flex; align-items: flex-end;}
+        .activity-graph svg { width: 100%; height: 100%; }
+        .activity-label { text-align: center; font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px; }
+
+        /* File Structure */
+        .file-tree { font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-secondary); line-height: 1.8; }
+        .file-tree ul { list-style: none; padding-left: 20px; }
+        .tree-item { display: flex; align-items: center; gap: 8px; }
+        .tree-item svg { fill: var(--text-secondary); width: 16px; height: 16px; }
+        .tree-root { color: var(--text-primary); }
+
+        /* Contributors & Dependencies */
+        .avatars { display: flex; gap: 8px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #30363d; border: 2px solid var(--bg-card); }
+        
+        .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+        .pill { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; }
+
+        /* AI Insights */
+        .ai-box { background: rgba(47,129,247,0.05); border-left: 3px solid var(--accent-blue); padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 0.95rem; }
+        
+        .alert-box { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 0.9rem;}
+        .alert-success { background: rgba(63, 185, 80, 0.05); border-color: rgba(63, 185, 80, 0.4); }
+        .alert-success svg { fill: var(--success-green); }
+        .alert-warning { background: rgba(210, 153, 34, 0.05); border-color: rgba(210, 153, 34, 0.4); }
+        .alert-warning svg { fill: var(--warning-yellow); }
+
+        .recommendation { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-secondary); }
+        .recommendation svg { fill: var(--success-green); width: 16px; height: 16px; flex-shrink: 0;}
+
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        /* Risk level pill variants */
+        .risk-low  { background: rgba(63,185,80,0.1);  border-color: rgba(63,185,80,0.5);  color: var(--success-green); }
+        .risk-medium { background: rgba(210,153,34,0.1); border-color: rgba(210,153,34,0.5); color: var(--warning-yellow); }
+        .risk-high { background: rgba(248,81,73,0.1);  border-color: rgba(248,81,73,0.5);  color: #f85149; }
+
+        /* Markdown report */
+        .markdown-body { line-height: 1.7; font-size: 0.95rem; }
+        .markdown-body h1,.markdown-body h2,.markdown-body h3 { margin: 20px 0 10px; font-weight: 600; }
+        .markdown-body h1 { font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .markdown-body h2 { font-size: 1.2rem; }
+        .markdown-body h3 { font-size: 1rem; color: var(--text-secondary); }
+        .markdown-body p  { margin-bottom: 10px; }
+        .markdown-body ul { margin: 6px 0 12px 20px; }
+        .markdown-body li { margin-bottom: 4px; }
+        .markdown-body pre { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; overflow-x: auto; margin: 12px 0; }
+        .markdown-body code { font-family: var(--font-mono); font-size: 0.875rem; }
+        .markdown-body :not(pre) > code { background: rgba(255,255,255,0.07); padding: 2px 6px; border-radius: 4px; }
+        .markdown-body hr { border: none; border-top: 1px solid var(--border-color); margin: 20px 0; }
+
+        /* Background AI processing banner */
+        .bg-processing-banner {
+            background: rgba(47,129,247,0.07);
+            border: 1px solid rgba(47,129,247,0.3);
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.875rem;
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .bg-processing-banner .pulse-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            animation: pulseDot 1.4s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.7); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="search-view">
+        <div class="logo-box">
+            <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        </div>
+        <h1>Analyze Any GitHub Repository</h1>
+        <p class="subtitle">Get comprehensive insights, technical metrics, and AI-powered analysis for any public GitHub repository in seconds.</p>
+        
+        <form class="search-form" onsubmit="startAnalysis(event)">
+            <div class="input-group">
+                <svg viewBox="0 0 24 24"><path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"/></svg>
+                <input type="text" id="repo-url" placeholder="Enter GitHub repository URL (e.g., https://github.com/facebook/react)" required>
+            </div>
+            <button type="submit" class="search-btn">Analyze</button>
+        </form>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">Enter any public GitHub repository to get comprehensive insights and AI-powered analysis • Press Enter to analyze</p>
+    </div>
+
+    <div id="loading-view" class="hidden">
+        <div class="terminal">
+            <div class="term-header flex gap-2">
+                <span class="term-prompt">&gt;_</span> Repository Analyzer
+            </div>
+            <div id="term-content">
+                </div>
+        </div>
+    </div>
+
+    <div id="results-view" class="hidden">
+        <!-- Shown while AI analysis is still running in the background -->
+        <div id="bg-processing-banner" class="bg-processing-banner hidden">
+            <span class="pulse-dot"></span>
+            AI analysis is running in the background — results will appear here automatically when ready.
+        </div>
+
+        <div class="dashboard-header">
+            <h2>Repository Analysis Report</h2>
+            <div class="flex gap-2">
+                <button class="btn-outline" id="copy-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copy as Markdown
+                </button>
+                <button class="btn-outline" id="new-analysis-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    New Analysis
+                </button>
+            </div>
+        </div>
+
+        <!-- Repo header card -->
+        <div class="card">
+            <div class="repo-title" id="repo-name-display"></div>
+            <p class="text-secondary" id="repo-description"></p>
+            <div class="badges" id="badges-row">
+                <div class="badge">
+                    <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <span id="badge-stars">—</span>
+                </div>
+                <div class="badge">
+                    <svg viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7M6 9v12"/></svg>
+                    <span id="badge-forks">—</span>
+                </div>
+                <div class="badge hidden" id="badge-watchers-container">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <span id="badge-watchers"></span>
+                </div>
+                <div class="badge hidden" id="badge-issues-container">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span id="badge-issues"></span>
+                </div>
+                <div class="badge hidden" id="badge-license-container">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                    <span id="badge-license"></span>
+                </div>
+                <div class="badge hidden" id="badge-lang-container">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                    <span id="badge-lang"></span>
+                </div>
+                <div class="badge hidden" id="badge-commit-container">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span id="badge-commit"></span>
+                </div>
+                <div class="badge hidden" id="badge-archived-container" style="border-color:rgba(210,153,34,0.5);color:var(--warning-yellow);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                    Archived
+                </div>
+            </div>
+            <!-- Topics -->
+            <div id="topics-section" class="hidden" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;"></div>
+        </div>
+
+        <!-- Deterministic: Languages + Activity (always shown when data available) -->
+        <div class="grid-2" id="deterministic-grid" style="display:none;">
+            <div class="card" id="languages-card">
+                <div class="card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                    Languages
+                </div>
+                <div class="lang-bar" id="lang-bar" style="margin-bottom:16px;"></div>
+                <div class="lang-list" id="lang-list"></div>
+            </div>
+
+            <div class="card" id="activity-card">
+                <div class="card-title" style="margin-bottom:20px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    Commit Activity
+                    <span id="health-badge" style="margin-left:auto;font-size:0.75rem;font-weight:500;padding:2px 10px;border-radius:20px;"></span>
+                </div>
+                <!-- 12-week SVG bar chart -->
+                <svg id="commit-chart" viewBox="0 0 480 80" preserveAspectRatio="none"
+                     style="width:100%;height:80px;display:block;"></svg>
+                <div id="commit-chart-labels"
+                     style="display:flex;justify-content:space-between;margin-top:6px;"></div>
+                <div id="commit-chart-legend"
+                     style="font-size:0.8rem;color:var(--text-secondary);margin-top:10px;"></div>
+            </div>
+        </div>
+
+        <!-- AI insights card -->
+        <div class="card">
+            <div class="card-title" style="margin-bottom:24px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><path d="M12 2a9 9 0 0 1 9 9c0 4.97-4.03 9-9 9s-9-4.03-9-9a9 9 0 0 1 9-9z"></path><path d="M12 17v-4"></path><path d="M12 9h.01"></path></svg>
+                AI-Powered Insights
+            </div>
+            <div class="ai-box" id="ai-summary">Generating insights…</div>
+
+            <div id="architecture-section" class="hidden">
+                <div class="card-title" style="font-size:1rem;margin-top:28px;">Architecture</div>
+                <p id="architecture-text" class="text-secondary" style="font-size:0.95rem;line-height:1.7;"></p>
+            </div>
+
+            <!-- Tech Stack — only rendered when AI data is available -->
+            <div id="tech-stack-section" class="hidden" style="margin-top:28px;">
+                <div class="card-title" style="font-size:1rem;margin-bottom:12px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    Tech Stack
+                </div>
+                <div class="pills" id="tech-stack-pills"></div>
+            </div>
+
+            <!-- Risk & Confidence — only rendered when AI data is available -->
+            <div id="risk-section" class="hidden" style="margin-top:28px;">
+                <div class="card-title" style="font-size:1rem;margin-bottom:12px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    Risk &amp; Confidence
+                </div>
+                <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+                    <span id="risk-level" class="pill"></span>
+                    <span id="ai-confidence" class="text-secondary" style="font-size:0.85rem;"></span>
+                </div>
+                <div id="findings-section" class="hidden" style="margin-top:16px;">
+                    <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px;font-weight:500;">Security & Health Findings</div>
+                    <div id="findings-list"></div>
+                </div>
+                <div id="limitations-section" class="hidden" style="margin-top:16px;">
+                    <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px;font-weight:500;">Noted limitations</div>
+                    <div id="limitations-list"></div>
+                </div>
+            </div>
+
+            <!-- Recommendations — only rendered when AI data is available -->
+            <div id="recommendations-section" class="hidden" style="margin-top:28px;">
+                <div class="card-title" style="font-size:1rem;margin-bottom:12px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    Recommendations
+                </div>
+                <div id="recommendations-list"></div>
+            </div>
+        </div>
+
+        <!-- markdown_report is fetched silently; use "Copy as Markdown" button to export -->
+
+        <!-- placeholder to close removed sections -->
+        <div class="hidden">
+            </div>
+        </div>
+</div>
+
+<script>
+    const POLL_INTERVAL_MS  = {{ poll_interval_ms }};
+    const POLL_TIMEOUT_MS   = 120_000; // 2 min hard deadline
+    const STATIC_TIMEOUT_MS = 5_000;   // show static data after 5 s if AI not ready
+    let currentJobId   = null;
+    let pollTimer      = null;
+    let pollDeadline   = null;
+    let staticTimer    = null;   // 5 s fallback timer
+    let staticShown    = false;  // true once static/deterministic data is displayed
+    let latestPollData = null;   // most recent poll response
+    let lastProgressMsg = null;
+    let markdownText   = '';
+
+    // ── Terminal helpers ────────────────────────────────────────────────────────
+    function clearTerminal() {
+        document.getElementById('term-content').innerHTML = '';
+    }
+
+    function addTermLine(text, type) {
+        const tc   = document.getElementById('term-content');
+        const prev = tc.querySelector('.cursor');
+        if (prev) prev.remove();
+        const line = document.createElement('div');
+        line.className  = 'term-line';
+        line.style.cssText = 'opacity:0;animation:fadeIn 0.3s forwards;';
+        const color = type === 'error'   ? 'var(--warning-yellow)'
+                    : type === 'success' ? 'var(--success-green)'
+                    : '';
+        const s = color ? ` style="color:${color}"` : '';
+        line.innerHTML = `<span class="term-prompt"${s}>&gt;</span> <span${s}>${escHtml(text)}</span>`;
+        tc.appendChild(line);
+        tc.scrollTop = tc.scrollHeight;
+    }
+
+    function addCursor() {
+        const tc   = document.getElementById('term-content');
+        const line = document.createElement('div');
+        line.className   = 'term-line';
+        line.style.opacity = '1';
+        line.innerHTML   = '<span class="cursor"></span>';
+        tc.appendChild(line);
+    }
+
+    // ── Progress message mapping ────────────────────────────────────────────────
+    // Maps raw backend progress_msg values to human-friendly terminal lines.
+    // Falls back to the raw message if no mapping is found.
+    const PROGRESS_MAP = {
+        'repository research queued':           'Your request is in the queue…',
+        'fetching github data':                 'Connecting to GitHub and reading repository info…',
+        'preparing ai analysis':               'Crunching the repository data, almost ready for analysis…',
+        'running ai analysis':                 'AI is reading the codebase and generating insights…',
+        'research completed':                  'Analysis complete! Building your report…',
+        'research failed after maximum retry attempts': 'Something went wrong on our end. Please try again.',
+    };
+
+    function friendlyProgress(msg) {
+        return PROGRESS_MAP[msg?.toLowerCase().trim()] ?? msg;
+    }
+
+    // ── URL validation ──────────────────────────────────────────────────────────
+    // Accepts: https://github.com/{owner}/{repo}  (trailing slash / .git optional)
+    const GITHUB_URL_RE = /^https:\/\/github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+?)(\.git)?\/?$/;
+
+    function validateGithubUrl(url) {
+        if (!url) return 'Please enter a repository URL.';
+        if (!url.startsWith('https://')) return 'URL must start with https://';
+        if (!url.includes('github.com')) return 'Only GitHub repositories are supported (github.com).';
+        if (!GITHUB_URL_RE.test(url)) return 'Enter a valid repository URL — e.g. https://github.com/owner/repo';
+        return null; // valid
+    }
+
+    const urlInput   = document.getElementById('repo-url');
+    const urlError   = document.createElement('p');
+    urlError.style.cssText = 'color:var(--warning-yellow);font-size:0.85rem;margin-top:6px;min-height:1.2em;';
+    urlInput.closest('.search-form').insertAdjacentElement('afterend', urlError);
+
+    urlInput.addEventListener('input', () => {
+        const v = urlInput.value.trim();
+        urlError.textContent = v ? (validateGithubUrl(v) ?? '') : '';
+    });
+
+    // ── Analysis flow ───────────────────────────────────────────────────────────
+    async function startAnalysis(e) {
+        e.preventDefault();
+        const url = urlInput.value.trim();
+        if (!url) return;
+
+        const validationError = validateGithubUrl(url);
+        if (validationError) {
+            urlError.textContent = validationError;
+            urlInput.focus();
+            return;
+        }
+        urlError.textContent = '';
+
+        if (pollTimer)    { clearTimeout(pollTimer);    pollTimer    = null; }
+        if (pollDeadline) { clearTimeout(pollDeadline); pollDeadline = null; }
+        if (staticTimer)  { clearTimeout(staticTimer);  staticTimer  = null; }
+        currentJobId    = null;
+        lastProgressMsg = null;
+        staticShown     = false;
+        latestPollData  = null;
+        markdownText    = '';
+
+        document.getElementById('search-view').classList.add('hidden');
+        document.getElementById('results-view').classList.add('hidden');
+        document.getElementById('loading-view').classList.remove('hidden');
+        clearTerminal();
+        addTermLine('Starting analysis for your repository…');
+        addCursor();
+
+        let data;
+        try {
+            const res = await fetch('/api/v1/research/jobs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+            });
+            data = await res.json();
+            if (!res.ok) {
+                addTermLine(data.detail || data.title || 'Submission failed.', 'error');
+                scheduleReturnToSearch();
+                return;
+            }
+        } catch (err) {
+            addTermLine(`Network error: ${err.message}`, 'error');
+            scheduleReturnToSearch();
+            return;
+        }
+
+        currentJobId = data.job_id;
+        addTermLine('Request accepted! Checking progress…', 'success');
+
+        // Hard deadline — stop polling after 2 minutes and surface a friendly error
+        pollDeadline = setTimeout(() => {
+            if (pollTimer)   { clearTimeout(pollTimer);   pollTimer   = null; }
+            if (staticTimer) { clearTimeout(staticTimer); staticTimer = null; }
+            if (!staticShown) {
+                addTermLine('Analysis is taking longer than expected. Please try again later.', 'error');
+                scheduleReturnToSearch(4000);
+            }
+        }, POLL_TIMEOUT_MS);
+
+        // After 5 s, show whatever static data is available and keep AI running in background
+        staticShown    = false;
+        latestPollData = null;
+        staticTimer    = setTimeout(onStaticTimeout, STATIC_TIMEOUT_MS);
+
+        schedulePoll();
+    }
+
+    function schedulePoll() {
+        pollTimer = setTimeout(doPoll, POLL_INTERVAL_MS);
+    }
+
+    async function doPoll() {
+        if (!currentJobId) return;
+        let data;
+        try {
+            const res = await fetch(`/api/v1/research/jobs/${currentJobId}`);
+            data = await res.json();
+            if (!res.ok) {
+                addTermLine(data.detail || 'Failed to fetch status.', 'error');
+                scheduleReturnToSearch();
+                return;
+            }
+        } catch (err) {
+            addTermLine(`Network error: ${err.message}`, 'error');
+            schedulePoll(); // retry on transient error
+            return;
+        }
+
+        // Store latest response so the static-data timer can use it
+        latestPollData = data;
+
+        // Only print progress_msg when it actually changes — prevents duplicate spam
+        if (data.progress_msg && data.progress_msg !== lastProgressMsg) {
+            // Suppress terminal noise once static data is already on screen
+            if (!staticShown) addTermLine(friendlyProgress(data.progress_msg));
+            lastProgressMsg = data.progress_msg;
+        }
+
+        if (data.status === 'completed') {
+            if (pollDeadline) { clearTimeout(pollDeadline); pollDeadline = null; }
+            if (staticTimer)  { clearTimeout(staticTimer);  staticTimer  = null; }
+            if (staticShown) {
+                // Static data already on screen — just update the AI sections in-place
+                updateAiInsights(data);
+            } else {
+                addTermLine('All done! Loading your report…', 'success');
+                setTimeout(() => renderResults(data), 800);
+            }
+        } else if (data.status === 'failed') {
+            if (pollDeadline) { clearTimeout(pollDeadline); pollDeadline = null; }
+            if (staticTimer)  { clearTimeout(staticTimer);  staticTimer  = null; }
+            if (staticShown) {
+                // Results already on screen — show inline AI failure, don't redirect
+                document.getElementById('bg-processing-banner').classList.add('hidden');
+                const sumEl = document.getElementById('ai-summary');
+                sumEl.innerHTML =
+                    '<strong>AI analysis failed</strong><br>' +
+                    '<span style="font-size:0.9rem;opacity:0.8">Repository metadata was collected successfully ' +
+                    'but AI-powered insights could not be generated at this time.</span>';
+                sumEl.style.borderLeftColor = 'var(--warning-yellow)';
+                sumEl.style.background      = 'rgba(210,153,34,0.05)';
+            } else {
+                addTermLine(data.error || 'Analysis failed.', 'error');
+                scheduleReturnToSearch();
+            }
+        } else {
+            schedulePoll();
+        }
+    }
+
+    function scheduleReturnToSearch(ms) {
+        setTimeout(() => {
+            document.getElementById('loading-view').classList.add('hidden');
+            document.getElementById('results-view').classList.add('hidden');
+            document.getElementById('search-view').classList.remove('hidden');
+        }, ms || 3500);
+    }
+
+    // ── Render results ──────────────────────────────────────────────────────────
+    function renderResults(data) {
+        const meta   = data.instant_data || data.report?.deterministic_data;
+        const report = data.report;
+        const ai     = report?.ai_insights;
+
+        // Repo header
+        if (meta) {
+            const parts  = (meta.name || '').split('/');
+            const owner  = parts.length > 1 ? parts.slice(0, -1).join('/') : '';
+            const repo   = parts[parts.length - 1];
+            document.getElementById('repo-name-display').innerHTML = owner
+                ? `${escHtml(owner)} / <span>${escHtml(repo)}</span>`
+                : `<span>${escHtml(repo)}</span>`;
+
+            const descEl = document.getElementById('repo-description');
+            if (meta.description) {
+                descEl.textContent = meta.description;
+            } else {
+                descEl.classList.add('hidden');
+            }
+
+            document.getElementById('badge-stars').textContent = fmtNum(meta.stars);
+            document.getElementById('badge-forks').textContent = fmtNum(meta.forks);
+
+            if (meta.watchers != null) {
+                document.getElementById('badge-watchers').textContent = fmtNum(meta.watchers) + ' watching';
+                document.getElementById('badge-watchers-container').classList.remove('hidden');
+            }
+            if (meta.open_issues != null) {
+                document.getElementById('badge-issues').textContent = fmtNum(meta.open_issues) + ' issues';
+                document.getElementById('badge-issues-container').classList.remove('hidden');
+            }
+            if (meta.license_spdx) {
+                document.getElementById('badge-license').textContent = meta.license_spdx;
+                document.getElementById('badge-license-container').classList.remove('hidden');
+            }
+            if (meta.primary_lang) {
+                document.getElementById('badge-lang').textContent = meta.primary_lang;
+                document.getElementById('badge-lang-container').classList.remove('hidden');
+            }
+            if (meta.last_commit_at) {
+                document.getElementById('badge-commit').textContent = relTime(meta.last_commit_at);
+                document.getElementById('badge-commit-container').classList.remove('hidden');
+            }
+            if (meta.is_archived) {
+                document.getElementById('badge-archived-container').classList.remove('hidden');
+            }
+
+            // Topics
+            if (meta.topics?.length) {
+                const topicsEl = document.getElementById('topics-section');
+                topicsEl.innerHTML = meta.topics
+                    .map(t => `<span class="pill" style="font-size:0.8rem;">${escHtml(t)}</span>`)
+                    .join('');
+                topicsEl.style.display = 'flex';
+            }
+
+            // Languages breakdown card
+            if (meta.languages?.length) {
+                const bar  = document.getElementById('lang-bar');
+                const list = document.getElementById('lang-list');
+                bar.innerHTML  = meta.languages
+                    .map(l => `<div style="width:${l.percentage}%;background:${escHtml(l.color || '#8b949e')};height:100%;"></div>`)
+                    .join('');
+                list.innerHTML = meta.languages
+                    .map(l => `
+                        <div class="lang-item">
+                            <span class="flex items-center">
+                                <span class="lang-dot" style="background:${escHtml(l.color || '#8b949e')};"></span>
+                                ${escHtml(l.name)}
+                            </span>
+                            <span>${l.percentage}%</span>
+                        </div>`)
+                    .join('');
+                document.getElementById('deterministic-grid').style.display = 'grid';
+            }
+
+            // Commit activity chart
+            if (meta.recent_commits?.length) {
+                renderCommitChart(meta.recent_commits);
+                document.getElementById('deterministic-grid').style.display = 'grid';
+            }
+        }
+
+        // Tech Stack — only shown when AI data is available
+        if (ai?.overview?.tech_stack?.length) {
+            document.getElementById('tech-stack-pills').innerHTML =
+                ai.overview.tech_stack.map(t => `<span class="pill">${escHtml(t)}</span>`).join('');
+            document.getElementById('tech-stack-section').classList.remove('hidden');
+        }
+
+        // Risk & Confidence — only shown when AI data is available
+        if (ai?.security_health) {
+            const sh = ai.security_health;
+            const riskEl = document.getElementById('risk-level');
+            riskEl.textContent = sh.risk_level;
+            riskEl.className   = `pill risk-${sh.risk_level.toLowerCase()}`;
+            document.getElementById('ai-confidence').textContent = `AI confidence: ${sh.ai_confidence}`;
+
+            if (sh.limitations?.length) {
+                document.getElementById('limitations-list').innerHTML = sh.limitations
+                    .map(l => `<div class="recommendation"><svg viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0;fill:var(--warning-yellow)"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>${escHtml(l)}</div>`)
+                    .join('');
+                document.getElementById('limitations-section').classList.remove('hidden');
+            }
+            if (sh.findings?.length) {
+                document.getElementById('findings-list').innerHTML = sh.findings
+                    .map(f => `<div class="recommendation"><svg viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0;fill:var(--warning-yellow)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>${escHtml(f)}</div>`)
+                    .join('');
+                document.getElementById('findings-section').classList.remove('hidden');
+            }
+            document.getElementById('risk-section').classList.remove('hidden');
+        }
+
+        // Recommendations
+        if (ai?.recommendations?.items?.length) {
+            document.getElementById('recommendations-list').innerHTML = ai.recommendations.items
+                .map(r => `<div class="recommendation"><svg viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0;fill:var(--success-green)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>${escHtml(r)}</div>`)
+                .join('');
+            document.getElementById('recommendations-section').classList.remove('hidden');
+        }
+
+        // AI summary
+        const sumEl = document.getElementById('ai-summary');
+        if (ai?.overview?.project_purpose) {
+            sumEl.textContent = ai.overview.project_purpose;
+        } else if (data.ai_fallback) {
+            // Log the technical reason for debugging; never expose internal details to the user.
+            if (data.ai_fallback_reason) console.warn('[AI fallback]', data.ai_fallback_reason);
+            sumEl.innerHTML =
+                '<strong>AI analysis unavailable</strong><br>' +
+                '<span style="font-size:0.9rem;opacity:0.8">Repository metadata was collected successfully, ' +
+                'but AI-powered insights could not be generated at this time. ' +
+                'The full report below is still available.</span>';
+            sumEl.style.borderLeftColor = 'var(--warning-yellow)';
+            sumEl.style.background = 'rgba(210,153,34,0.05)';
+        } else {
+            sumEl.textContent = 'AI insights unavailable.';
+        }
+
+        // Architecture
+        if (ai?.overview?.architecture) {
+            document.getElementById('architecture-text').textContent = ai.overview.architecture;
+            document.getElementById('architecture-section').classList.remove('hidden');
+        }
+
+        // Store markdown silently for the "Copy as Markdown" button — not rendered on screen
+        if (report?.markdown_report) {
+            markdownText = report.markdown_report;
+        }
+
+        document.getElementById('loading-view').classList.add('hidden');
+        document.getElementById('results-view').classList.remove('hidden');
+    }
+
+    // ── Button handlers ─────────────────────────────────────────────────────────
+    document.getElementById('copy-btn').addEventListener('click', async () => {
+        if (!markdownText) return;
+        try {
+            await navigator.clipboard.writeText(markdownText);
+            const btn  = document.getElementById('copy-btn');
+            const orig = btn.innerHTML;
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        } catch (_) {}
+    });
+
+    document.getElementById('new-analysis-btn').addEventListener('click', () => {
+        if (pollTimer)    { clearTimeout(pollTimer);    pollTimer    = null; }
+        if (pollDeadline) { clearTimeout(pollDeadline); pollDeadline = null; }
+        if (staticTimer)  { clearTimeout(staticTimer);  staticTimer  = null; }
+        currentJobId    = null;
+        lastProgressMsg = null;
+        staticShown     = false;
+        latestPollData  = null;
+        markdownText    = '';
+        document.getElementById('bg-processing-banner').classList.add('hidden');
+        document.getElementById('results-view').classList.add('hidden');
+        document.getElementById('search-view').classList.remove('hidden');
+        document.getElementById('repo-url').value = '';
+    });
+
+    // ── Commit activity chart ───────────────────────────────────────────────────
+    function renderCommitChart(commits) {
+        const WEEKS   = 12;
+        const now     = new Date();
+        const W       = 480;   // SVG viewport width
+        const H       = 90;    // SVG viewport height
+        const PAD_T   = 8;     // top padding
+        const PAD_B   = 8;     // bottom padding
+        const PLOT_H  = H - PAD_T - PAD_B;  // usable height
+
+        // Build 12 weekly buckets (oldest → newest)
+        const buckets = Array.from({ length: WEEKS }, (_, i) => {
+            const end   = new Date(now);
+            end.setDate(end.getDate() - (WEEKS - 1 - i) * 7);
+            end.setHours(23, 59, 59, 999);
+            const start = new Date(end);
+            start.setDate(start.getDate() - 6);
+            start.setHours(0, 0, 0, 0);
+            return { start, end, count: 0, label: monthLabel(start) };
+        });
+
+        for (const c of commits) {
+            const d = new Date(c.committed_at);
+            for (const b of buckets) {
+                if (d >= b.start && d <= b.end) { b.count++; break; }
+            }
+        }
+
+        const maxCount    = Math.max(...buckets.map(b => b.count), 1);
+        const activeWeeks = buckets.filter(b => b.count > 0).length;
+
+        // Health score
+        const ratio = activeWeeks / WEEKS;
+        const [healthLabel, healthColor, healthBg] =
+            ratio >= 0.6 ? ['Active',   '#3fb950', 'rgba(63,185,80,0.12)']
+          : ratio >= 0.3 ? ['Moderate', '#d29922', 'rgba(210,153,34,0.12)']
+          :                ['Inactive', '#f85149', 'rgba(248,81,73,0.12)'];
+
+        // Compute (x, y) for each data point
+        const pts = buckets.map((b, i) => {
+            const x = (i / (WEEKS - 1)) * W;
+            const y = PAD_T + PLOT_H * (1 - b.count / maxCount);
+            return { x, y, b };
+        });
+
+        // Area fill path (closed polygon below the line)
+        const areaD = [
+            `M ${pts[0].x} ${H}`,
+            ...pts.map(p => `L ${p.x} ${p.y}`),
+            `L ${pts[pts.length - 1].x} ${H}`,
+            'Z',
+        ].join(' ');
+
+        // Polyline path
+        const lineD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+        // Dot + tooltip circles
+        const dots = pts.map(p => {
+            const tip = `${p.b.count} commit${p.b.count !== 1 ? 's' : ''} · w/o ${p.b.start.toLocaleDateString()}`;
+            return `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${healthColor}" stroke="var(--bg-card)" stroke-width="2"
+                            style="cursor:default;">
+                      <title>${escHtml(tip)}</title>
+                    </circle>`;
+        }).join('');
+
+        const gradId = 'cg' + Math.random().toString(36).slice(2, 7);
+        const svgEl  = document.getElementById('commit-chart');
+        svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        svgEl.innerHTML = `
+            <defs>
+                <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stop-color="${healthColor}" stop-opacity="0.25"/>
+                    <stop offset="100%" stop-color="${healthColor}" stop-opacity="0.02"/>
+                </linearGradient>
+            </defs>
+            <!-- area fill -->
+            <path d="${areaD}" fill="url(#${gradId})"/>
+            <!-- line -->
+            <path d="${lineD}" fill="none" stroke="${healthColor}" stroke-width="2.5"
+                  stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- dots -->
+            ${dots}`;
+
+        // Week labels — only show when month changes
+        const labelsEl = document.getElementById('commit-chart-labels');
+        labelsEl.innerHTML = buckets.map((b, i) => {
+            const showLabel = i === 0 || b.start.getDate() <= 7;
+            return `<span style="font-size:0.7rem;color:var(--text-secondary);flex:1;text-align:${i === 0 ? 'left' : i === WEEKS - 1 ? 'right' : 'center'};">
+                        ${showLabel ? escHtml(b.label) : ''}
+                    </span>`;
+        }).join('');
+
+        // Health badge
+        const badge = document.getElementById('health-badge');
+        badge.textContent = healthLabel;
+        badge.style.cssText += `color:${healthColor};background:${healthBg};border:1px solid ${healthColor}40;`;
+
+        // Legend
+        const avg = (commits.length / WEEKS).toFixed(1);
+        document.getElementById('commit-chart-legend').textContent =
+            `${commits.length} commits over 12 weeks · avg ${avg}/week · ${activeWeeks} active week${activeWeeks !== 1 ? 's' : ''}`;
+    }
+
+    function monthLabel(date) {
+        return date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+    }
+
+    // ── Utilities ───────────────────────────────────────────────────────────────
+    function escHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function fmtNum(n) {
+        if (n == null) return '—';
+        if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+        if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'k';
+        return String(n);
+    }
+
+    function relTime(iso) {
+        const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+        if (days === 0) return 'today';
+        if (days === 1) return 'yesterday';
+        if (days < 30)  return `${days}d ago`;
+        if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+        return `${Math.floor(days / 365)}y ago`;
+    }
+
+    // Minimal safe Markdown → HTML renderer (line-by-line, no deps)
+    function renderMd(md) {
+        const lines = md.split('\n');
+        let out = '', inCode = false, codeBuf = '', inList = false;
+        for (const raw of lines) {
+            if (raw.startsWith('```')) {
+                if (inCode) {
+                    out += `<pre><code>${escHtml(codeBuf)}</code></pre>\n`;
+                    codeBuf = ''; inCode = false;
+                } else {
+                    if (inList) { out += '</ul>\n'; inList = false; }
+                    inCode = true;
+                }
+                continue;
+            }
+            if (inCode) { codeBuf += raw + '\n'; continue; }
+            const isList = raw.startsWith('- ') || raw.startsWith('* ');
+            if (inList && !isList) { out += '</ul>\n'; inList = false; }
+            if      (raw.startsWith('### ')) { out += `<h3>${fmt(raw.slice(4))}</h3>\n`; }
+            else if (raw.startsWith('## '))  { out += `<h2>${fmt(raw.slice(3))}</h2>\n`; }
+            else if (raw.startsWith('# '))   { out += `<h1>${fmt(raw.slice(2))}</h1>\n`; }
+            else if (isList) {
+                if (!inList) { out += '<ul>\n'; inList = true; }
+                out += `<li>${fmt(raw.slice(2))}</li>\n`;
+            }
+            else if (raw.trim() === '---')   { out += '<hr>\n'; }
+            else if (raw.trim() === '')      { out += '<br>\n'; }
+            else                             { out += `<p>${fmt(raw)}</p>\n`; }
+        }
+        if (inList) out += '</ul>\n';
+        if (inCode) out += `<pre><code>${escHtml(codeBuf)}</code></pre>\n`;
+        return out;
+    }
+
+    function fmt(s) {
+        let t = escHtml(s);
+        t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+        t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        t = t.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        return t;
+    }
+
+    // ── 5-second static-data fallback ──────────────────────────────────────────
+    function onStaticTimeout() {
+        staticTimer = null;
+        // If results view is already visible (AI beat the timer), nothing to do
+        if (!document.getElementById('results-view').classList.contains('hidden')) return;
+        // If the job finished or was cancelled, nothing to do
+        if (!currentJobId) return;
+        // If no GitHub data has arrived yet, keep the terminal running normally
+        if (!latestPollData?.instant_data) return;
+
+        staticShown = true;
+        renderStaticData(latestPollData);
+    }
+
+    // Render deterministic data immediately; show AI section as "loading"
+    function renderStaticData(data) {
+        renderResults(data); // renders GitHub metadata; ai is null so AI sections stay hidden
+
+        // Replace the default "AI insights unavailable." text with a loading indicator
+        const sumEl = document.getElementById('ai-summary');
+        sumEl.innerHTML =
+            '<span style="display:inline-flex;align-items:center;gap:10px;color:var(--text-secondary);">' +
+            '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent-blue);animation:pulseDot 1.4s ease-in-out infinite;flex-shrink:0;"></span>' +
+            'AI is analyzing this repository in the background\u2026 insights will appear here automatically.' +
+            '</span>';
+        sumEl.style.borderLeftColor = 'rgba(47,129,247,0.4)';
+        sumEl.style.background      = 'rgba(47,129,247,0.04)';
+
+        document.getElementById('bg-processing-banner').classList.remove('hidden');
+    }
+
+    // Patch AI sections in-place once the background analysis completes
+    function updateAiInsights(data) {
+        const report = data.report;
+        const ai     = report?.ai_insights;
+
+        // Hide the background banner
+        document.getElementById('bg-processing-banner').classList.add('hidden');
+
+        // AI summary
+        const sumEl = document.getElementById('ai-summary');
+        if (ai?.overview?.project_purpose) {
+            sumEl.textContent  = ai.overview.project_purpose;
+            sumEl.style.borderLeftColor = '';
+            sumEl.style.background      = '';
+        } else if (data.ai_fallback) {
+            if (data.ai_fallback_reason) console.warn('[AI fallback]', data.ai_fallback_reason);
+            sumEl.innerHTML =
+                '<strong>AI analysis unavailable</strong><br>' +
+                '<span style="font-size:0.9rem;opacity:0.8">Repository metadata was collected successfully, ' +
+                'but AI-powered insights could not be generated at this time. ' +
+                'The full report below is still available.</span>';
+            sumEl.style.borderLeftColor = 'var(--warning-yellow)';
+            sumEl.style.background      = 'rgba(210,153,34,0.05)';
+        } else {
+            sumEl.textContent = 'AI insights unavailable.';
+        }
+
+        // Tech stack
+        if (ai?.overview?.tech_stack?.length) {
+            document.getElementById('tech-stack-pills').innerHTML =
+                ai.overview.tech_stack.map(t => `<span class="pill">${escHtml(t)}</span>`).join('');
+            document.getElementById('tech-stack-section').classList.remove('hidden');
+        }
+
+        // Architecture
+        if (ai?.overview?.architecture) {
+            document.getElementById('architecture-text').textContent = ai.overview.architecture;
+            document.getElementById('architecture-section').classList.remove('hidden');
+        }
+
+        // Risk & Confidence
+        if (ai?.security_health) {
+            const sh = ai.security_health;
+            const riskEl = document.getElementById('risk-level');
+            riskEl.textContent = sh.risk_level;
+            riskEl.className   = `pill risk-${sh.risk_level.toLowerCase()}`;
+            document.getElementById('ai-confidence').textContent = `AI confidence: ${sh.ai_confidence}`;
+            if (sh.limitations?.length) {
+                document.getElementById('limitations-list').innerHTML = sh.limitations
+                    .map(l => `<div class="recommendation"><svg viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0;fill:var(--warning-yellow)"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>${escHtml(l)}</div>`)
+                    .join('');
+                document.getElementById('limitations-section').classList.remove('hidden');
+            }
+            if (sh.findings?.length) {
+                document.getElementById('findings-list').innerHTML = sh.findings
+                    .map(f => `<div class="recommendation"><svg viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0;fill:var(--warning-yellow)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>${escHtml(f)}</div>`)
+                    .join('');
+                document.getElementById('findings-section').classList.remove('hidden');
+            }
+            document.getElementById('risk-section').classList.remove('hidden');
+        }
+
+        // Recommendations
+        if (ai?.recommendations?.items?.length) {
+            document.getElementById('recommendations-list').innerHTML = ai.recommendations.items
+                .map(r => `<div class="recommendation"><svg viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0;fill:var(--success-green)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>${escHtml(r)}</div>`)
+                .join('');
+            document.getElementById('recommendations-section').classList.remove('hidden');
+        }
+
+        // Markdown (for Copy button)
+        if (report?.markdown_report) {
+            markdownText = report.markdown_report;
+        }
+    }
+</script>
+</body>
+</html>
